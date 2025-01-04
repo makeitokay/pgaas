@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgaas-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgaas-backend
+  template:
+    metadata:
+      labels:
+        app: pgaas-backend
+    spec:
+      serviceAccountName: pgaas-sa
+      containers:
+        - name: pgaas-backend
+          image: "pgaas-backend:latest"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP

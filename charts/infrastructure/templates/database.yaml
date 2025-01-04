@@ -1,0 +1,17 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: db-pgaas
+spec:
+  instances: 1
+  storage:
+    size: 1Gi
+  bootstrap:
+    initdb:
+      database: "pgaas"
+      owner: "pgaas"
+      encoding: 'UTF8'
+      localeCollate: 'C'
+      localeCType: 'C'
+      secret:
+        name: db-pgaas-secret
