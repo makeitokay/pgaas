@@ -1,0 +1,15 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: db-{{ .Values.name }}
+spec:
+  instances: 1
+  storage:
+    size: 1Gi
+  bootstrap:
+    initdb:
+      database: "{{ .Values.name }}"
+      owner: "{{ .Values.name }}"
+      encoding: 'UTF8'
+      localeCollate: 'C'
+      localeCType: 'C'

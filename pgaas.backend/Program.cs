@@ -1,5 +1,11 @@
+using Core;
+using Core.Kubernetes;
+using Core.Repositories;
 using Infrastructure;
+using Infrastructure.Repositories;
+using k8s;
 using Microsoft.EntityFrameworkCore;
+using pgaas.backend;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +15,22 @@ builder.Services.AddOpenApi();
 
 var connectionString = builder.Configuration.GetConnectionString("Default");
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
+
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+builder.Services.AddSingleton<IKubernetes>(sp =>
+{
+	var config = builder.Environment.IsDevelopment()
+		? KubernetesClientConfiguration.BuildConfigFromConfigFile()
+		: KubernetesClientConfiguration.InClusterConfig();
+	return new Kubernetes(config);
+});
+
+builder.Services.AddSingleton<IKubernetesPostgresClusterManager, KubernetesPostgresClusterManager>();
+builder.Services
+	.AddSingleton<IKubernetesPostgresClusterSynchronizationService, KubernetesPostgresClusterSynchronizationService>();
+
+builder.Services.AddHostedService<KubernetesPostgresClusterSynchronizationTask>();
 
 var app = builder.Build();
 
@@ -31,10 +53,10 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.MapGet("/hello", (ApplicationDbContext dbContext) =>
+app.MapGet("/hello", async (IKubernetesPostgresClusterManager manager, ApplicationDbContext dbContext) =>
 {
-	var clusters = dbContext.Clusters.ToList();
-	return string.Join('\n', clusters.Select(c => c.SystemName));
+	var cluster = await dbContext.Clusters.FirstAsync();
+	await manager.CreateClusterAsync(cluster);
 });
 
 app.Run();

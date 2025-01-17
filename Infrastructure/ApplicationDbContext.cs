@@ -27,6 +27,11 @@ public class ApplicationDbContext : DbContext
 				property.SetValueConverter(converter);
 			}
 		}
+
+		modelBuilder
+			.Entity<Cluster>()
+			.HasIndex(c => c.SystemName)
+			.IsUnique();
 	}
 
 	protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
