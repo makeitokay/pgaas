@@ -18,7 +18,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql
 
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-builder.Services.AddSingleton<IKubernetes>(sp =>
+builder.Services.AddScoped<IKubernetes>(sp =>
 {
 	var config = builder.Environment.IsDevelopment()
 		? KubernetesClientConfiguration.BuildConfigFromConfigFile()
@@ -26,7 +26,7 @@ builder.Services.AddSingleton<IKubernetes>(sp =>
 	return new Kubernetes(config);
 });
 
-builder.Services.AddSingleton<IKubernetesPostgresClusterManager, KubernetesPostgresClusterManager>();
+builder.Services.AddScoped<IKubernetesPostgresClusterManager, KubernetesPostgresClusterManager>();
 builder.Services
 	.AddSingleton<IKubernetesPostgresClusterSynchronizationService, KubernetesPostgresClusterSynchronizationService>();
 

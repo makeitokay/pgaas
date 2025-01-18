@@ -9,6 +9,7 @@ public interface IKubernetesPostgresClusterManager
 {
 	Task CreateClusterAsync(Cluster cluster);
 	Task DeleteClusterAsync(Cluster cluster);
+	Task<CloudnativePgClusterStatus?> GetClusterStatusAsync(Cluster cluster);
 }
 
 public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKubernetesPostgresClusterManager
@@ -33,6 +34,14 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 	public Task DeleteClusterAsync(Cluster cluster)
 	{
 		throw new NotImplementedException();
+	}
+
+	public async Task<CloudnativePgClusterStatus?> GetClusterStatusAsync(Cluster cluster)
+	{
+		using var client = new GenericClient(kubernetes, "postgresql.cnpg.io", "v1", "clusters");
+		var cloudnativePgCluster = await client
+			.ReadNamespacedAsync<CloudnativePgCluster>(cluster.SystemName, $"db-{cluster.SystemName}");
+		return cloudnativePgCluster?.Status;
 	}
 
 	private FluxHelmRelease CreateHelmRelease(Cluster cluster)

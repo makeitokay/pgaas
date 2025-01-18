@@ -9,7 +9,14 @@ public class KubernetesPostgresClusterSynchronizationTask(
 	{
 		while (!stoppingToken.IsCancellationRequested)
 		{
-			await synchronizationService.SynchronizeAsync();
+			try
+			{
+				await synchronizationService.SynchronizeAsync();
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine("Unable to synchronize clusters: {0}", e);
+			}
 			await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
 		}
 
