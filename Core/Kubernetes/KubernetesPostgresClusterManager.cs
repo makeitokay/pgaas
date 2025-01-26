@@ -9,6 +9,7 @@ public interface IKubernetesPostgresClusterManager
 {
 	Task CreateClusterAsync(Cluster cluster);
 	Task DeleteClusterAsync(Cluster cluster);
+	Task RestartClusterAsync(Cluster cluster);
 	Task<CloudnativePgClusterStatus?> GetClusterStatusAsync(Cluster cluster);
 }
 
@@ -36,11 +37,28 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 		throw new NotImplementedException();
 	}
 
+	public async Task RestartClusterAsync(Cluster cluster)
+	{
+		using var client = CreateCnpgKubernetesClient();
+		
+		var patchStr = $$"""
+		                 {
+		                     "metadata": {
+		                         "annotations": {
+		                             "kubectl.kubernetes.io/restartedAt": "{{DateTime.UtcNow:o}}"
+		                         }
+		                     }
+		                 }
+		                 """;
+		await client.PatchNamespacedAsync<CloudnativePgCluster>(new V1Patch(patchStr, V1Patch.PatchType.MergePatch),
+			cluster.SystemName, cluster.ClusterNameInKubernetes);
+	}
+
 	public async Task<CloudnativePgClusterStatus?> GetClusterStatusAsync(Cluster cluster)
 	{
-		using var client = new GenericClient(kubernetes, "postgresql.cnpg.io", "v1", "clusters");
+		using var client = CreateCnpgKubernetesClient();
 		var cloudnativePgCluster = await client
-			.ReadNamespacedAsync<CloudnativePgCluster>(cluster.SystemName, $"db-{cluster.SystemName}");
+			.ReadNamespacedAsync<CloudnativePgCluster>(cluster.SystemName, cluster.ClusterNameInKubernetes);
 		return cloudnativePgCluster?.Status;
 	}
 
@@ -99,4 +117,5 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 		return true;
 	}
 
+	private GenericClient CreateCnpgKubernetesClient() => new(kubernetes, "postgresql.cnpg.io", "v1", "clusters");
 }

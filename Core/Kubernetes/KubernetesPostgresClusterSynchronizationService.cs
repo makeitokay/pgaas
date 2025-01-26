@@ -26,7 +26,7 @@ public class KubernetesPostgresClusterSynchronizationService(IServiceProvider se
 	{
 		var startingClusters = clusterRepository
 			.Items
-			.Where(c => c.Status == ClusterStatus.Starting)
+			.Where(c => c.Status == ClusterStatus.Starting || c.Status == ClusterStatus.Restarting)
 			.ToList();
 
 		foreach (var cluster in startingClusters)

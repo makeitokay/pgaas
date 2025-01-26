@@ -56,7 +56,7 @@ app.MapControllers();
 app.MapGet("/hello", async (IKubernetesPostgresClusterManager manager, ApplicationDbContext dbContext) =>
 {
 	var cluster = await dbContext.Clusters.FirstAsync();
-	await manager.CreateClusterAsync(cluster);
+	await manager.RestartClusterAsync(cluster);
 });
 
 app.Run();

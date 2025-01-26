@@ -12,6 +12,8 @@ public class Cluster : BaseEntity
 	public ClusterStatus Status { get; set; }
 	
 	public virtual ClusterConfiguration Configuration { get; set; }
+
+	public string ClusterNameInKubernetes => $"pg-{SystemName}";
 }
 
 
@@ -19,6 +21,7 @@ public enum ClusterStatus
 {
 	Initialization,
 	Starting,
+	Restarting,
 	Running,
 	Deleting,
 	Deleted
