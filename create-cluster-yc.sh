@@ -58,3 +58,6 @@ spec:
   secretRef:
     name: pgaas-oci-creds
 EOF
+
+kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/postgres-containers/refs/heads/main/Debian/ClusterImageCatalog-bullseye.yaml
+

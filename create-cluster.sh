@@ -61,3 +61,5 @@ spec:
   url: oci://kind-registry:5000/pgaas
   insecure: true
 EOF
+
+kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/postgres-containers/refs/heads/main/Debian/ClusterImageCatalog-bullseye.yaml

@@ -64,6 +64,7 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 
 	private FluxHelmRelease CreateHelmRelease(Cluster cluster)
 	{
+		var configuration = cluster.Configuration;
 		var helmRelease = new FluxHelmRelease
 		{
 			Kind = "HelmRelease",
@@ -86,7 +87,15 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 				Interval = "10m",
 				Values = new Dictionary<string, object>
 				{
-					["name"] = cluster.SystemName
+					["name"] = cluster.SystemName,
+					["majorVersion"] = configuration.MajorVersion,
+					["instances"] = configuration.Instances,
+					["storageSize"] = $"{configuration.StorageSize}Gi",
+					["memory"] = $"{configuration.Memory}Mi",
+					["cpu"] = $"{configuration.Cpu}m",
+					["databaseName"] = configuration.DatabaseName,
+					["lcCollate"] = configuration.LcCollate,
+					["lcCtype"] = configuration.LcCtype
 				}
 			}
 		};

@@ -3,13 +3,25 @@ kind: Cluster
 metadata:
   name: db-{{ .Values.name }}
 spec:
-  instances: 1
+  imageCatalogRef:
+    apiGroup: postgresql.cnpg.io
+    kind: ClusterImageCatalog
+    name: postgresql
+    major: "{{ .Values.majorVersion }}"
+  instances: "{{ .Values.instances }}"
   storage:
-    size: 1Gi
+    size: "{{ .Values.storageSize }}"
+  resources:
+    requests:
+      memory: "{{ .Values.memory }}"
+      cpu: "{{ .Values.cpu }}"
+    limits:
+      memory: "{{ .Values.memory }}"
+      cpu: "{{ .Values.cpu }}"
   bootstrap:
     initdb:
-      database: "{{ .Values.name }}"
-      owner: "{{ .Values.name }}"
+      database: "{{ .Values.databaseName }}"
+      owner: "{{ .Values.ownerName }}"
       encoding: 'UTF8'
-      localeCollate: 'C'
-      localeCType: 'C'
+      localeCollate: '{{ .Values.lcCollate }}'
+      localeCType: '{{ .Values.lcCtype }}'

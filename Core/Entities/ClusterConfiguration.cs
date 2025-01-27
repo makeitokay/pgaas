@@ -12,4 +12,28 @@ public class ClusterConfiguration : BaseEntity
 	
 	[Column("StorageSize")]
 	public int StorageSize { get; set; }
+	
+	[Column("Cpu")]
+	public double Cpu { get; set; }
+	
+	[Column("Memory")]
+	public double Memory { get; set; }
+	
+	[Column("MajorVersion")]
+	public int MajorVersion { get; set; }
+	
+	[Column("DatabaseName")]
+	public string DatabaseName { get; set; }
+	
+	[Column("LcCollate")]
+	public string LcCollate { get; set; }
+	
+	[Column("LcCtype")]
+	public string LcCtype { get; set; }
+	
+	[Column("Instances")]
+	public int Instances { get; set; }
+	
+	[Column("OwnerName")]
+	public string OwnerName { get; set; }
 }
