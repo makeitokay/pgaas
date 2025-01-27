@@ -32,6 +32,27 @@ public class ApplicationDbContext : DbContext
 			.Entity<Cluster>()
 			.HasIndex(c => c.SystemName)
 			.IsUnique();
+		
+		modelBuilder
+			.Entity<User>()
+			.HasIndex(c => c.Email)
+			.IsUnique();
+		
+		modelBuilder.Entity<WorkspaceUser>()
+			.HasOne(wu => wu.User)
+			.WithMany(u => u.WorkspaceUsers)
+			.HasForeignKey(wu => wu.UserId)
+			.OnDelete(DeleteBehavior.Cascade);
+
+		modelBuilder.Entity<WorkspaceUser>()
+			.HasOne(wu => wu.Workspace)
+			.WithMany(w => w.WorkspaceUsers)
+			.HasForeignKey(wu => wu.WorkspaceId)
+			.OnDelete(DeleteBehavior.Cascade);
+
+		modelBuilder.Entity<WorkspaceUser>()
+			.HasIndex(wu => new { wu.UserId, wu.WorkspaceId })
+			.IsUnique();
 	}
 
 	protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

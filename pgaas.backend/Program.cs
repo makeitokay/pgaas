@@ -1,10 +1,11 @@
 using Core;
-using Core.Kubernetes;
 using Core.Repositories;
 using Infrastructure;
 using Infrastructure.Repositories;
 using k8s;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using pgaas.backend;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,35 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.AddCors(options =>
+{
+	options.AddPolicy("CORSPolicy", b =>
+	{
+		b
+			.AllowAnyOrigin()
+			.AllowAnyMethod()
+			.AllowAnyHeader();
+	});
+});
+
+builder.Services
+	.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+	.AddJwtBearer(options =>
+	{
+		options.TokenValidationParameters = new TokenValidationParameters
+		{
+			ValidateIssuer = true,
+			ValidIssuer = Constants.Authentication.Issuer,
+			ValidateAudience = true,
+			ValidAudience = Constants.Authentication.Audience,
+			ValidateLifetime = true,
+			IssuerSigningKey = new SymmetricSecurityKey("PostgreSQLAsAServiceInKubernetesUltraSecretKey2024"u8.ToArray()),
+			ValidateIssuerSigningKey = true
+		};
+	});
+builder.Services
+	.AddAuthorization();
 
 var connectionString = builder.Configuration.GetConnectionString("Default");
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
@@ -49,6 +79,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
