@@ -8,7 +8,8 @@ using Microsoft.EntityFrameworkCore;
 namespace pgaas.backend.Attributes;
 
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
-public class WorkspaceAuthorizationByRoleAttribute
+public class WorkspaceAuthorizationByRoleAttribute : Attribute, IAsyncActionFilter
+
 {
 	public Role RequiredRole { get; }
 

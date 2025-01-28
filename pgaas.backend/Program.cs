@@ -1,5 +1,6 @@
 using Core;
 using Core.Repositories;
+using FluentValidation;
 using Infrastructure;
 using Infrastructure.Repositories;
 using k8s;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using pgaas.backend;
+using pgaas.Controllers.Dto.Clusters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +63,8 @@ builder.Services
 	.AddSingleton<IKubernetesPostgresClusterSynchronizationService, KubernetesPostgresClusterSynchronizationService>();
 
 builder.Services.AddHostedService<KubernetesPostgresClusterSynchronizationTask>();
+
+builder.Services.AddValidatorsFromAssemblyContaining<CreateClusterDto>();
 
 var app = builder.Build();
 

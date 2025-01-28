@@ -14,10 +14,10 @@ public class ClusterConfiguration : BaseEntity
 	public int StorageSize { get; set; }
 	
 	[Column("Cpu")]
-	public double Cpu { get; set; }
+	public int Cpu { get; set; }
 	
 	[Column("Memory")]
-	public double Memory { get; set; }
+	public int Memory { get; set; }
 	
 	[Column("MajorVersion")]
 	public int MajorVersion { get; set; }
