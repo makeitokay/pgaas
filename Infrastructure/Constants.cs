@@ -1,4 +1,4 @@
-﻿namespace pgaas.backend;
+﻿namespace Infrastructure;
 
 public class Constants
 {
@@ -7,4 +7,9 @@ public class Constants
 		public const string Issuer = "pgaas";
 		public const string Audience = "pgaas.client";
 	}
+
+	public static class ClaimTypes
+	{
+		public const string UserId = "UserId";
+	} 
 }

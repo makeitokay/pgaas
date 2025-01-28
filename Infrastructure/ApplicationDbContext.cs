@@ -53,6 +53,10 @@ public class ApplicationDbContext : DbContext
 		modelBuilder.Entity<WorkspaceUser>()
 			.HasIndex(wu => new { wu.UserId, wu.WorkspaceId })
 			.IsUnique();
+
+		modelBuilder.Entity<Workspace>()
+			.HasIndex(w => w.Name)
+			.IsUnique();
 	}
 
 	protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

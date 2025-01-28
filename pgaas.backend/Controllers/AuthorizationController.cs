@@ -62,7 +62,8 @@ public class AuthorizationController(
 	{
 		var userClaims = new List<Claim>
 		{
-			new(ClaimTypes.Email, user.Email)
+			new(ClaimTypes.Email, user.Email),
+			new(Constants.ClaimTypes.UserId, user.Id.ToString())
 		};
 
 		var jwt = new JwtSecurityToken(
