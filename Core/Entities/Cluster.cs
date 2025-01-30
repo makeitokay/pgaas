@@ -11,6 +11,11 @@ public class Cluster : BaseEntity
 	[Column("Status")]
 	public ClusterStatus Status { get; set; }
 	
+	public Workspace Workspace { get; set; }
+	
+	[Column("WorkspaceId")]
+	public int WorkspaceId { get; set; }
+	
 	public virtual ClusterConfiguration Configuration { get; set; }
 
 	public string ClusterNameInKubernetes => $"pg-{SystemName}";

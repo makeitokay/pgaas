@@ -3,6 +3,7 @@ using Core.Entities;
 using Core.Repositories;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using pgaas.Controllers.Dto.Clusters;
 using pgaas.backend.Attributes;
 
@@ -93,5 +94,13 @@ public class ClusterController : ControllerBase
         }
 
         return Ok(cluster);
+    }
+    
+    [HttpGet]
+    [WorkspaceAuthorizationByRole(Role.Viewer)]
+    public async Task<IActionResult> Get(int workspaceId)
+    {
+	    var clusters = await _clusterRepository.Items.Where(c => c.WorkspaceId == workspaceId).ToListAsync();
+	    return Ok(clusters);
     }
 }

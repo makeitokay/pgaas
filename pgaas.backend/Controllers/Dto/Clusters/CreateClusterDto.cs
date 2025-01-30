@@ -12,4 +12,6 @@ public class CreateClusterDto
 	public string LcCtype { get; set; } = null!;
 	public int Instances { get; set; }
 	public string OwnerName { get; set; } = null!;
+
+	public string OwnerPassword { get; set; } = null!;
 }

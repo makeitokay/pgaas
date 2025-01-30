@@ -63,6 +63,7 @@ builder.Services
 	.AddSingleton<IKubernetesPostgresClusterSynchronizationService, KubernetesPostgresClusterSynchronizationService>();
 
 builder.Services.AddHostedService<KubernetesPostgresClusterSynchronizationTask>();
+builder.Services.AddSingleton<IPostgresSqlManager, PostgresSqlManager>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreateClusterDto>();
 
