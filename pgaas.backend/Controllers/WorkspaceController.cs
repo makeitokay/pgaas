@@ -3,6 +3,8 @@ using Core.Repositories;
 using Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using pgaas.backend.Attributes;
 using pgaas.Controllers.Dto.Workspaces;
 
 namespace pgaas.Controllers;
@@ -53,8 +55,48 @@ public class WorkspaceController : ControllerBase
 
 		return Ok();
 	}
+	
+	[HttpPost("{id}/invite")]
+	[WorkspaceAuthorizationByRole(Role.Admin)]
+	public async Task<IActionResult> InviteUser(int id, [FromBody] InviteUserDto inviteUserDto)
+	{
+		if (string.IsNullOrWhiteSpace(inviteUserDto.Email) || !Enum.IsDefined(typeof(Role), inviteUserDto.Role))
+		{
+			return BadRequest("Invalid email or role.");
+		}
+
+		var workspace = await _repository.TryGetAsync(id);
+		if (workspace == null)
+		{
+			return NotFound("Workspace not found.");
+		}
+
+		var user = await _userRepository.Items.Where(u => u.Email == inviteUserDto.Email).FirstOrDefaultAsync();
+		if (user == null)
+		{
+			return NotFound("User not found.");
+		}
+
+		var existingWorkspaceUser = await _workspaceUserRepository.GetAsync(user.Id);
+		if (existingWorkspaceUser != null)
+		{
+			return BadRequest("User is already in the workspace.");
+		}
+
+		var workspaceUser = new WorkspaceUser
+		{
+			User = user,
+			Workspace = workspace,
+			Role = inviteUserDto.Role
+		};
+    
+		await _workspaceUserRepository.CreateAsync(workspaceUser);
+
+		return Ok();
+	}
 
 	[HttpGet("{id}")]
+	[WorkspaceAuthorizationByRole(Role.Viewer)]
 	public async Task<IActionResult> Get(int id)
 	{
 		var workspace = await _repository.TryGetAsync(id);
@@ -70,5 +112,25 @@ public class WorkspaceController : ControllerBase
 		};
 
 		return Ok(workspaceDto);
+	}
+	
+	[HttpGet("{id}/users")]
+	[WorkspaceAuthorizationByRole(Role.Viewer)]
+	public async Task<IActionResult> GetWorkspaceUsers(int id)
+	{
+		var workspace = await _repository.TryGetAsync(id);
+		if (workspace == null)
+		{
+			return NotFound("Workspace not found.");
+		}
+
+		var users = await _workspaceUserRepository.Items.Where(wu => wu.WorkspaceId == id).ToListAsync();
+		var userDtos = users.Select(u => new {
+			u.User.Id,
+			u.User.Email,
+			u.Role
+		});
+
+		return Ok(userDtos);
 	}
 }
