@@ -57,7 +57,7 @@ public class PostgresSqlManager : IPostgresSqlManager
 			Host = $"{cluster.ClusterNameInKubernetes}-rw.{cluster.SystemName}",
 			Port = 5432,
 			Username = "pgaas",
-			Passfile = "qwerty123",
+			Password = "qwerty123",
 			Database = "postgres",
 			Pooling = true
 		};

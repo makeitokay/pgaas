@@ -27,6 +27,7 @@ public enum ClusterStatus
 	Initialization,
 	Starting,
 	Restarting,
+	RecreatingStorage,
 	Running,
 	Deleting,
 	Deleted

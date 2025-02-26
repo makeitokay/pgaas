@@ -11,6 +11,7 @@ spec:
   instances: "{{ .Values.instances }}"
   storage:
     size: "{{ .Values.storageSize }}"
+    resizeInUseVolumes: "false"
   resources:
     requests:
       memory: "{{ .Values.memory }}"

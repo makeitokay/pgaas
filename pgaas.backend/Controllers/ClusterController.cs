@@ -28,8 +28,8 @@ public class ClusterController : ControllerBase
     }
 
     [HttpPost]
-    [WorkspaceAuthorizationByRole(Role.Admin)]
-    public async Task<IActionResult> Create(int workspaceId, [FromBody] CreateClusterDto createClusterDto)
+    [WorkspaceAuthorizationByRole(Role.Editor)]
+    public async Task<IActionResult> CreateOrEdit(int workspaceId, [FromBody] CreateClusterDto createClusterDto)
     {
 	    var validationResult = await _validator.ValidateAsync(createClusterDto);
 	    if (!validationResult.IsValid)
@@ -38,25 +38,48 @@ public class ClusterController : ControllerBase
 		    return BadRequest(errors);
 	    }
 
-        var cluster = new Cluster
-        {
-            SystemName = createClusterDto.SystemName,
-            Status = ClusterStatus.Initialization,
-            Configuration = new ClusterConfiguration
-            {
-                StorageSize = createClusterDto.StorageSize,
-                Cpu = createClusterDto.Cpu,
-                Memory = createClusterDto.Memory,
-                MajorVersion = createClusterDto.MajorVersion,
-                DatabaseName = createClusterDto.DatabaseName,
-                LcCollate = createClusterDto.LcCollate,
-                LcCtype = createClusterDto.LcCtype,
-                Instances = createClusterDto.Instances,
-                OwnerName = createClusterDto.OwnerName
-            }
-        };
+	    Cluster cluster;
+	    var existingCluster = await _clusterRepository.Items
+		    .FirstOrDefaultAsync(c => c.SystemName == createClusterDto.SystemName);
+	    if (existingCluster != null)
+	    {
+		    if (existingCluster.Status != ClusterStatus.Running)
+			    return BadRequest("Cannot edit non running cluster.");
+			    
+		    cluster = existingCluster;
+		    if (cluster.Configuration.StorageSize != createClusterDto.StorageSize)
+			    cluster.Status = ClusterStatus.RecreatingStorage;
+	    }
+	    else
+	    {
+		    cluster = new Cluster
+		    {
+			    Status = ClusterStatus.Initialization,
+			    SystemName = createClusterDto.SystemName
+		    };
+	    }
 
-        await _clusterRepository.CreateAsync(cluster);
+        cluster.Configuration = new ClusterConfiguration
+        {
+            StorageSize = createClusterDto.StorageSize,
+            Cpu = createClusterDto.Cpu,
+            Memory = createClusterDto.Memory,
+            MajorVersion = createClusterDto.MajorVersion,
+            DatabaseName = createClusterDto.DatabaseName,
+            LcCollate = createClusterDto.LcCollate,
+            LcCtype = createClusterDto.LcCtype,
+            Instances = createClusterDto.Instances,
+            OwnerName = createClusterDto.OwnerName
+        };
+        
+        if (existingCluster != null)
+        {
+	        await _clusterRepository.UpdateAsync(cluster);
+        }
+        else
+        {
+	        await _clusterRepository.CreateAsync(cluster);
+        }
 
         return Ok();
     }

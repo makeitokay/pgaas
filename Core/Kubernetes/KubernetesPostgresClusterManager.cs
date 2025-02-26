@@ -11,6 +11,7 @@ public interface IKubernetesPostgresClusterManager
 	Task DeleteClusterAsync(Cluster cluster);
 	Task RestartClusterAsync(Cluster cluster);
 	Task<CloudnativePgClusterStatus?> GetClusterStatusAsync(Cluster cluster);
+	Task RecreateStorage(Cluster cluster);
 }
 
 public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKubernetesPostgresClusterManager
@@ -60,6 +61,29 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 		var cloudnativePgCluster = await client
 			.ReadNamespacedAsync<CloudnativePgCluster>(cluster.SystemName, cluster.ClusterNameInKubernetes);
 		return cloudnativePgCluster?.Status;
+	}
+
+	public async Task RecreateStorage(Cluster cluster)
+	{
+		using var client = CreateCnpgKubernetesClient();
+
+		var pods = await client.ListNamespacedAsync<V1PodList>(cluster.SystemName);
+
+		var postgresPods = pods
+			.Items
+			.Where(p => p.Metadata.Name.StartsWith(cluster.ClusterNameInKubernetes))
+			.ToList();
+
+		foreach (var pod in postgresPods)
+		{
+			var tasks = new List<Task>()
+			{
+				client.DeleteNamespacedAsync<V1Pod>(cluster.SystemName, pod.Metadata.Name),
+				client.DeleteNamespacedAsync<V1PersistentVolumeClaim>(cluster.SystemName, pod.Metadata.Name)
+			};
+
+			await Task.WhenAll(tasks);
+		}
 	}
 
 	private FluxHelmRelease CreateHelmRelease(Cluster cluster)
