@@ -7,11 +7,13 @@ namespace Core;
 public interface IPostgresSqlManager
 {
 	Task CreateOrUpdateUserAsync(Cluster cluster, string username, string password, string database, List<string> roles, DateTime? expiryDate = null);
-	Task CreateDatabaseAsync(Cluster cluster, string database, string owner);
+	Task CreateDatabaseAsync(Cluster cluster, string database, string owner, string lcCollate, string lcCtype);
+	Task DeleteDatabaseAsync(Cluster cluster, string database);
 	Task DeleteUserAsync(Cluster cluster, string username);
 
 	Task<IEnumerable<(string Username, List<string> Roles, DateTime? ExpiryDate)>> GetUsersAsync(Cluster cluster);
 	Task<List<string>> GetRolesAsync(Cluster cluster);
+	Task<IEnumerable<string>> GetDatabasesAsync(Cluster cluster);
 }
 
 public class PostgresSqlManager : IPostgresSqlManager
@@ -75,16 +77,33 @@ public class PostgresSqlManager : IPostgresSqlManager
 		}
 	}
 	
-	public async Task CreateDatabaseAsync(Cluster cluster, string database, string owner)
+	public async Task<IEnumerable<string>> GetDatabasesAsync(Cluster cluster)
+	{
+		var getDatabasesSql = "SELECT datname FROM pg_database WHERE datistemplate = false and datname != 'postgres';";
+		var connectionString = GetConnectionString(cluster);
+		await using var connection = new NpgsqlConnection(connectionString);
+		await connection.OpenAsync();
+		return await connection.QueryAsync<string>(getDatabasesSql);
+	}
+	
+	public async Task DeleteDatabaseAsync(Cluster cluster, string database)
+	{
+		var dropDbSql = $"DROP DATABASE IF EXISTS {database};";
+		var connectionString = GetConnectionString(cluster);
+		await using var connection = new NpgsqlConnection(connectionString);
+		await connection.OpenAsync();
+		await connection.ExecuteAsync(dropDbSql);
+	}
+	
+	public async Task CreateDatabaseAsync(Cluster cluster, string database, string owner, string lcCollate, string lcCtype)
 	{
 		var createDbSql = $@"
-            CREATE DATABASE {database} WITH OWNER = {owner} ENCODING = 'UTF8' CONNECTION LIMIT = -1;
-        ";
+			CREATE DATABASE {database} WITH OWNER = {owner} ENCODING = 'UTF8' LC_COLLATE = '{lcCollate}' LC_CTYPE = '{lcCtype}' CONNECTION LIMIT = -1;
+		";
 
 		var connectionString = GetConnectionString(cluster);
 		await using var connection = new NpgsqlConnection(connectionString);
 		await connection.OpenAsync();
-
 		await connection.ExecuteAsync(createDbSql);
 	}
 	

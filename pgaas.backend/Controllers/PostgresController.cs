@@ -25,7 +25,25 @@ public class PostgresController : ControllerBase
 	public async Task<IActionResult> CreateDatabase(int workspaceId, int clusterId, [FromBody] CreateDatabaseRequest request)
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
-		await _postgresSqlManager.CreateDatabaseAsync(cluster, request.Database, request.Owner);
+		await _postgresSqlManager.CreateDatabaseAsync(cluster, request.Database, request.Owner, request.LcCollate, request.LcCtype);
+		return Ok();
+	}
+	
+	[HttpGet("databases")]
+	[WorkspaceAuthorizationByRole(Role.Viewer)]
+	public async Task<IActionResult> GetDatabases(int workspaceId, int clusterId)
+	{
+		var cluster = await _clusterRepository.GetAsync(clusterId);
+		var databases = await _postgresSqlManager.GetDatabasesAsync(cluster);
+		return Ok(databases);
+	}
+
+	[HttpDelete("database/{database}")]
+	[WorkspaceAuthorizationByRole(Role.Admin)]
+	public async Task<IActionResult> DeleteDatabase(int workspaceId, int clusterId, string database)
+	{
+		var cluster = await _clusterRepository.GetAsync(clusterId);
+		await _postgresSqlManager.DeleteDatabaseAsync(cluster, database);
 		return Ok();
 	}
 
