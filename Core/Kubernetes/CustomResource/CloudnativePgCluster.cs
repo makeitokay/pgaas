@@ -12,6 +12,9 @@ public class CloudnativePgClusterStatus
 {
 	public bool IsHealthy() => Phase == "Cluster in healthy state";
 	
+	public bool IsRestarting() => Phase is "Waiting for the instances to become active" 
+		or "Primary instance is being restarted without a switchover";
+	
 	[JsonPropertyName("phase")]
 	public string Phase { get; set; }
 }
