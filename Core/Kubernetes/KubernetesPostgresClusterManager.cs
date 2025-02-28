@@ -146,6 +146,11 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 						["poolMode"] = configuration.PoolerMode,
 						["maxClientConnections"] = configuration.PoolerMaxConnections?.ToString(),
 						["defaultPoolSize"] = configuration.PoolerDefaultPoolSize?.ToString()
+					},
+					["sg"] = new Dictionary<string, object?>
+					{
+						["enabled"] = (cluster.SecurityGroupId is not null).ToString().ToLower(),
+						["ips"] = cluster.SecurityGroup?.AllowedIps
 					}
 				}
 			}

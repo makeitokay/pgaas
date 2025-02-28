@@ -1,0 +1,12 @@
+﻿{{- if .Values.sg.enabled }}
+apiVersion: traefik.io/v1alpha1
+kind: MiddlewareTCP
+metadata:
+  name: db-{{ .Values.name }}-mdlwr
+spec:
+  ipAllowList:
+    sourceRange:
+      {{- range $ip := .Values.sg.ips }}
+      - {{ $ip }}
+      {{ - end }}
+{{- end }}

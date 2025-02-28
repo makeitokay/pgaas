@@ -82,6 +82,7 @@ metadata:
   namespace: traefik
 spec:
   type: NodePort
+  externalTrafficPolicy: Local
   ports:
     - name: pg
       protocol: TCP

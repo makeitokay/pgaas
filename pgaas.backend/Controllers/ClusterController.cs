@@ -16,15 +16,17 @@ public class ClusterController : ControllerBase
 	private readonly IRepository<Cluster> _clusterRepository;
 	private readonly IKubernetesPostgresClusterManager _kubernetesPostgresClusterManager;
 	private readonly IValidator<CreateClusterDto> _validator;
+	private readonly IRepository<SecurityGroup> _securityGroupRepository;
 
     public ClusterController(
 	    IRepository<Cluster> clusterRepository,
 	    IKubernetesPostgresClusterManager kubernetesPostgresClusterManager,
-	    IValidator<CreateClusterDto> validator)
+	    IValidator<CreateClusterDto> validator, IRepository<SecurityGroup> securityGroupRepository)
     {
 	    _clusterRepository = clusterRepository;
 	    _kubernetesPostgresClusterManager = kubernetesPostgresClusterManager;
 	    _validator = validator;
+	    _securityGroupRepository = securityGroupRepository;
     }
 
     [HttpPost]
@@ -64,6 +66,15 @@ public class ClusterController : ControllerBase
 		    };
 	    }
 
+	    if (createClusterDto.SecurityGroupId is not null)
+	    {
+		    var sg = await _securityGroupRepository.TryGetAsync(createClusterDto.SecurityGroupId.Value);
+		    if (sg is null)
+			    return BadRequest("Security group not found.");
+		    
+		    cluster.SecurityGroupId = sg.Id;
+		    cluster.SecurityGroup = sg;
+	    }
         cluster.Configuration = new ClusterConfiguration
         {
             StorageSize = createClusterDto.StorageSize,

@@ -20,4 +20,6 @@ public class CreateClusterDto
 	public int? PoolerMaxConnections { get; set; }
 	
 	public int? PoolerDefaultPoolSize { get; set; }
+	
+	public int? SecurityGroupId { get; set; }
 }

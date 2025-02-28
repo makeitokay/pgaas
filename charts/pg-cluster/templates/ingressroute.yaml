@@ -7,12 +7,16 @@ spec:
     - pg
   routes:
     - match: HostSNI(`{{ .Values.name }}.pgaas.ru`)
+      {{- if .Values.sg.enabled }}
+      middlewares:
+        - name: db-{{ .Values.name }}-mdlwr
+      {{ - end }}
       services:
-{{- if .Values.pooler.enabled }}
+        {{- if .Values.pooler.enabled }}
         - name: db-{{ .Values.name }}-pooler
-{{- else }}
+        {{- else }}
         - name: db-{{ .Values.name }}-rw
-{{- end }}
+        {{- end }}
           port: 5432
   tls:
     passthrough: true
