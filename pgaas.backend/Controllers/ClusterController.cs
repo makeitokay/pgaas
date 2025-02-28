@@ -69,7 +69,11 @@ public class ClusterController : ControllerBase
             LcCollate = createClusterDto.LcCollate,
             LcCtype = createClusterDto.LcCtype,
             Instances = createClusterDto.Instances,
-            OwnerName = createClusterDto.OwnerName
+            OwnerName = createClusterDto.OwnerName,
+            OwnerPassword = createClusterDto.OwnerPassword,
+            PoolerMode = createClusterDto.PoolerMode,
+            PoolerMaxConnections = createClusterDto.PoolerMaxConnections,
+            PoolerDefaultPoolSize = createClusterDto.PoolerDefaultPoolSize
         };
         
         if (existingCluster != null)

@@ -123,7 +123,7 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 					}
 				},
 				Interval = "10m",
-				Values = new Dictionary<string, object>
+				Values = new Dictionary<string, object?>
 				{
 					["name"] = cluster.SystemName,
 					["majorVersion"] = configuration.MajorVersion,
@@ -134,7 +134,16 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 					["databaseName"] = configuration.DatabaseName,
 					["lcCollate"] = configuration.LcCollate,
 					["lcCtype"] = configuration.LcCtype,
-					["postgresqlParameters"] = configuration.Parameters
+					["ownerName"] = configuration.OwnerName,
+					["ownerPassword"] = configuration.OwnerPassword,
+					["postgresqlParameters"] = configuration.Parameters,
+					["pooler"] = new Dictionary<string, string?>
+					{
+						["enabled"] = (configuration.PoolerMode is not null).ToString().ToLower(),
+						["poolMode"] = configuration.PoolerMode,
+						["maxClientConnections"] = configuration.PoolerMaxConnections?.ToString(),
+						["defaultPoolSize"] = configuration.PoolerDefaultPoolSize?.ToString()
+					}
 				}
 			}
 		};

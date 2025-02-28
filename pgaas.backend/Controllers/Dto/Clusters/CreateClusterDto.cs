@@ -14,4 +14,10 @@ public class CreateClusterDto
 	public string OwnerName { get; set; } = null!;
 
 	public string OwnerPassword { get; set; } = null!;
+	
+	public string? PoolerMode { get; set; }
+	
+	public int? PoolerMaxConnections { get; set; }
+	
+	public int? PoolerDefaultPoolSize { get; set; }
 }

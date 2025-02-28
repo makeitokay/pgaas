@@ -37,6 +37,18 @@ public class ClusterConfiguration : BaseEntity
 	[Column("OwnerName")]
 	public string OwnerName { get; set; }
 	
+	[Column("OwnerName")]
+	public string OwnerPassword { get; set; }
+	
 	[Column("Parameters")]
 	public Dictionary<string, string?>? Parameters { get; set; }
+	
+	[Column("PoolerMode")]
+	public string? PoolerMode { get; set; }
+	
+	[Column("PoolerMaxConnections")]
+	public int? PoolerMaxConnections { get; set; }
+	
+	[Column("PoolerDefaultPoolSize")]
+	public int? PoolerDefaultPoolSize { get; set; }
 }

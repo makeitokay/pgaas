@@ -16,7 +16,7 @@ public class FluxHelmReleaseSpec
 	public string Interval { get; set; }
 	
 	[JsonPropertyName("values")]
-	public Dictionary<string, object> Values { get; set; }
+	public Dictionary<string, object?> Values { get; set; }
 }
 
 public class FluxHelmReleaseSpecChart
