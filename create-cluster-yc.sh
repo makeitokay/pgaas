@@ -3,6 +3,9 @@ set -o errexit
 
 CLUSTER_NAME="pgaas"
 
+GITHUB_USERNAME = "<username_here>"
+GITHUB_TOKEN = "<token_here>"
+
 if kind get clusters | grep -q "$CLUSTER_NAME"; then
     echo "Cluster '$CLUSTER_NAME' already exists."
 else
@@ -12,6 +15,9 @@ else
    nodes:
    - role: control-plane
      extraPortMappings:
+     - containerPort: 32090
+       hostPort: 5432
+       protocol: TCP
      - containerPort: 6443
        hostPort: 6443
        protocol: TCP
@@ -43,8 +49,8 @@ metadata:
   name: pgaas-oci-creds
   namespace: default
 stringData:
-  username: "<username_here>"
-  password: "<token_here>"
+  username: "$GITHUB_USERNAME"
+  password: "$GITHUB_TOKEN"
 ---
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
@@ -61,3 +67,28 @@ EOF
 
 kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/postgres-containers/refs/heads/main/Debian/ClusterImageCatalog-bullseye.yaml
 
+helm repo add traefik https://traefik.github.io/charts
+helm repo update
+
+helm install traefik traefik/traefik -n traefik --create-namespace \
+  --set ports.pg.exposedPort=5432 --set ports.pg.port=5432
+  
+cat <<EOF | kubectl apply -f -
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-pg
+  namespace: traefik
+spec:
+  type: NodePort
+  ports:
+    - name: pg
+      protocol: TCP
+      port: 5432
+      targetPort: 5432
+      nodePort: 32090
+  selector:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik-traefik
+EOF
