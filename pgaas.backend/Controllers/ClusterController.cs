@@ -54,7 +54,7 @@ public class ClusterController : ControllerBase
 	    {
 		    cluster = new Cluster
 		    {
-			    Status = ClusterStatus.Initialization,
+			    Status = ClusterStatus.Starting,
 			    SystemName = createClusterDto.SystemName
 		    };
 	    }
@@ -75,10 +75,12 @@ public class ClusterController : ControllerBase
         if (existingCluster != null)
         {
 	        await _clusterRepository.UpdateAsync(cluster);
+	        await _kubernetesPostgresClusterManager.UpdateClusterAsync(cluster);
         }
         else
         {
 	        await _clusterRepository.CreateAsync(cluster);
+	        await _kubernetesPostgresClusterManager.CreateClusterAsync(cluster);
         }
 
         return Ok();

@@ -35,3 +35,8 @@ spec:
       localeCType: '{{ .Values.lcCtype }}'
       secret:
         name: db-{{ .Values.name }}-owner
+  postgresql:
+    parameters:
+      {{- range $key, $value := .Values.postgresqlParameters }}
+      {{$key}}: "{{$value}}"
+      {{- end }}

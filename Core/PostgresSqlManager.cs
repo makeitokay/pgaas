@@ -13,7 +13,9 @@ public interface IPostgresSqlManager
 
 	Task<IEnumerable<(string Username, List<string> Roles, DateTime? ExpiryDate)>> GetUsersAsync(Cluster cluster);
 	Task<List<string>> GetRolesAsync(Cluster cluster);
-	Task<IEnumerable<string>> GetDatabasesAsync(Cluster cluster);
+	Task<List<string>> GetDatabasesAsync(Cluster cluster);
+	Task<IDictionary<string, string>> GetConfigurationAsync(Cluster cluster);
+	Task<List<string>> GetConfigurationInvalidParameters(Cluster cluster);
 }
 
 public class PostgresSqlManager : IPostgresSqlManager
@@ -77,15 +79,35 @@ public class PostgresSqlManager : IPostgresSqlManager
 		}
 	}
 	
-	public async Task<IEnumerable<string>> GetDatabasesAsync(Cluster cluster)
+	public async Task<List<string>> GetDatabasesAsync(Cluster cluster)
 	{
 		var getDatabasesSql = "SELECT datname FROM pg_database WHERE datistemplate = false and datname != 'postgres';";
 		var connectionString = GetConnectionString(cluster);
 		await using var connection = new NpgsqlConnection(connectionString);
 		await connection.OpenAsync();
-		return await connection.QueryAsync<string>(getDatabasesSql);
+		return (await connection.QueryAsync<string>(getDatabasesSql)).ToList();
 	}
-	
+
+	public async Task<IDictionary<string, string?>> GetConfigurationAsync(Cluster cluster)
+	{
+		var getConfigSql = "SELECT name, setting FROM pg_settings";
+		var connectionString = GetConnectionString(cluster);
+		await using var connection = new NpgsqlConnection(connectionString);
+		await connection.OpenAsync();
+		var results = await connection.QueryAsync<(string, string?)>(getConfigSql);
+		return results.ToDictionary(r => r.Item1, r => r.Item2);
+	}
+
+	public async Task<List<string>> GetConfigurationInvalidParameters(Cluster cluster)
+	{
+		var sql = "select name from pg_file_settings where error is not null;";
+		var connectionString = GetConnectionString(cluster);
+		await using var connection = new NpgsqlConnection(connectionString);
+		await connection.OpenAsync();
+		var results = await connection.QueryAsync<string>(sql);
+		return results.ToList();
+	}
+
 	public async Task DeleteDatabaseAsync(Cluster cluster, string database)
 	{
 		var dropDbSql = $"DROP DATABASE IF EXISTS {database};";

@@ -36,4 +36,7 @@ public class ClusterConfiguration : BaseEntity
 	
 	[Column("OwnerName")]
 	public string OwnerName { get; set; }
+	
+	[Column("Parameters")]
+	public Dictionary<string, string?>? Parameters { get; set; }
 }

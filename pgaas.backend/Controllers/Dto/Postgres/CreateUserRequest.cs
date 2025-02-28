@@ -1,4 +1,4 @@
-﻿namespace pgaas.Controllers.Dto.Sql;
+﻿namespace pgaas.Controllers.Dto.Postgres;
 
 public class CreateUserRequest
 {

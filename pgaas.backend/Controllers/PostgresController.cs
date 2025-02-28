@@ -2,8 +2,10 @@
 using Core.Entities;
 using Core.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using pgaas.backend;
 using pgaas.backend.Attributes;
-using pgaas.Controllers.Dto.Sql;
+using pgaas.Controllers.Dto.Postgres;
 
 namespace pgaas.Controllers;
 
@@ -13,16 +15,24 @@ public class PostgresController : ControllerBase
 {
 	private readonly IPostgresSqlManager _postgresSqlManager;
 	private readonly IRepository<Cluster> _clusterRepository;
+	private readonly IOptions<List<PostgresConfigurationParameter>> _postgresConfigurationParameters;
+	private readonly IKubernetesPostgresClusterManager _kubernetesPostgresClusterManager;
 
-	public PostgresController(IPostgresSqlManager sqlManager, IRepository<Cluster> clusterRepository)
+	public PostgresController(
+		IPostgresSqlManager sqlManager,
+		IRepository<Cluster> clusterRepository,
+		IOptions<List<PostgresConfigurationParameter>> postgresConfigurationParameters,
+		IKubernetesPostgresClusterManager kubernetesPostgresClusterManager)
 	{
 		_postgresSqlManager = sqlManager;
 		_clusterRepository = clusterRepository;
+		_postgresConfigurationParameters = postgresConfigurationParameters;
+		_kubernetesPostgresClusterManager = kubernetesPostgresClusterManager;
 	}
 
 	[HttpPost("database")]
 	[WorkspaceAuthorizationByRole(Role.Editor)]
-	public async Task<IActionResult> CreateDatabase(int workspaceId, int clusterId, [FromBody] CreateDatabaseRequest request)
+	public async Task<IActionResult> CreateDatabaseAsync(int workspaceId, int clusterId, [FromBody] CreateDatabaseRequest request)
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		await _postgresSqlManager.CreateDatabaseAsync(cluster, request.Database, request.Owner, request.LcCollate, request.LcCtype);
@@ -31,7 +41,7 @@ public class PostgresController : ControllerBase
 	
 	[HttpGet("databases")]
 	[WorkspaceAuthorizationByRole(Role.Viewer)]
-	public async Task<IActionResult> GetDatabases(int workspaceId, int clusterId)
+	public async Task<IActionResult> GetDatabasesAsync(int workspaceId, int clusterId)
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		var databases = await _postgresSqlManager.GetDatabasesAsync(cluster);
@@ -40,7 +50,7 @@ public class PostgresController : ControllerBase
 
 	[HttpDelete("database/{database}")]
 	[WorkspaceAuthorizationByRole(Role.Admin)]
-	public async Task<IActionResult> DeleteDatabase(int workspaceId, int clusterId, string database)
+	public async Task<IActionResult> DeleteDatabaseAsync(int workspaceId, int clusterId, string database)
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		await _postgresSqlManager.DeleteDatabaseAsync(cluster, database);
@@ -49,7 +59,7 @@ public class PostgresController : ControllerBase
 
 	[HttpPost("user")]
 	[WorkspaceAuthorizationByRole(Role.Editor)]
-	public async Task<IActionResult> CreateOrUpdateUser(int workspaceId, int clusterId, [FromBody] CreateUserRequest request)
+	public async Task<IActionResult> CreateOrUpdateUserAsync(int workspaceId, int clusterId, [FromBody] CreateUserRequest request)
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		await _postgresSqlManager.CreateOrUpdateUserAsync(cluster, request.Username, request.Password, request.Database, request.Roles, request.ExpiryDate);
@@ -58,7 +68,7 @@ public class PostgresController : ControllerBase
 
 	[HttpGet("users")]
 	[WorkspaceAuthorizationByRole(Role.Viewer)]
-	public async Task<IActionResult> GetUsers(int workspaceId, int clusterId)
+	public async Task<IActionResult> GetUsersAsync(int workspaceId, int clusterId)
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		var users = await _postgresSqlManager.GetUsersAsync(cluster);
@@ -67,7 +77,7 @@ public class PostgresController : ControllerBase
 	
 	[HttpGet("roles")]
 	[WorkspaceAuthorizationByRole(Role.Viewer)]
-	public async Task<IActionResult> GetAvailableRoles(int workspaceId, int clusterId)
+	public async Task<IActionResult> GetAvailableRolesAsync(int workspaceId, int clusterId)
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		var roles = await _postgresSqlManager.GetRolesAsync(cluster);
@@ -76,10 +86,76 @@ public class PostgresController : ControllerBase
 
 	[HttpDelete("user/{username}")]
 	[WorkspaceAuthorizationByRole(Role.Admin)]
-	public async Task<IActionResult> DeleteUser(int workspaceId, int clusterId, string username)
+	public async Task<IActionResult> DeleteUserAsync(int workspaceId, int clusterId, string username)
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		await _postgresSqlManager.DeleteUserAsync(cluster, username);
 		return Ok();
+	}
+	
+	[HttpGet("configuration")]
+	[WorkspaceAuthorizationByRole(Role.Viewer)]
+	public async Task<IActionResult> GetConfigurationAsync(int workspaceId, int clusterId)
+	{
+		var cluster = await _clusterRepository.GetAsync(clusterId);
+		var config = await _postgresSqlManager.GetConfigurationAsync(cluster);
+
+		var parameters = _postgresConfigurationParameters
+			.Value
+			.Select(setting =>
+				setting with
+				{
+					Value = config.TryGetValue(setting.Name, out var value) ? value : null
+				}).ToList();
+
+		return Ok(parameters);
+	}
+	
+	[HttpPost("configuration")]
+	[WorkspaceAuthorizationByRole(Role.Editor)]
+	public async Task<IActionResult> UpdateConfigurationAsync(
+		int workspaceId,
+		int clusterId,
+		[FromBody] Dictionary<string, string?> parameters)
+	{
+		var cluster = await _clusterRepository.GetAsync(clusterId);
+		cluster.Configuration.Parameters = parameters;
+		await _kubernetesPostgresClusterManager.UpdateClusterAsync(cluster);
+		await _clusterRepository.UpdateAsync(cluster);
+		
+		return Ok();
+	}
+	
+	[HttpGet("configuration/readiness")]
+	[WorkspaceAuthorizationByRole(Role.Editor)]
+	public async Task<IActionResult> GetConfigurationReadinessAsync(int workspaceId, int clusterId)
+	{
+		var cluster = await _clusterRepository.GetAsync(clusterId);
+		var status = await _kubernetesPostgresClusterManager.GetClusterStatusAsync(cluster);
+		if (status is null || !status.IsHealthy())
+			return Ok(ConfigurationReadinessDto.Waiting());
+		
+		var configuration = await _postgresSqlManager.GetConfigurationAsync(cluster);
+		var configurationInDatabase = cluster.Configuration.Parameters;
+		if (configurationInDatabase is null)
+			return Ok(ConfigurationReadinessDto.Success());
+
+		var mismatchedParameters = configuration
+			.Where(kv =>
+			{
+				configurationInDatabase.TryGetValue(kv.Key, out var valueInDatabase);
+				return kv.Value != valueInDatabase
+				       && !(string.IsNullOrWhiteSpace(kv.Value) && string.IsNullOrWhiteSpace(valueInDatabase));
+			})
+			.Select(kv => kv.Key)
+			.ToList();
+		if (mismatchedParameters.Count == 0)
+			return Ok(ConfigurationReadinessDto.Success());
+
+		var invalidParameters = await _postgresSqlManager.GetConfigurationInvalidParameters(cluster);
+		return Ok(mismatchedParameters.All(p => invalidParameters.Contains(p))
+			? ConfigurationReadinessDto.Failed(mismatchedParameters)
+			: ConfigurationReadinessDto.Waiting());
+
 	}
 }

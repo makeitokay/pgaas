@@ -20,7 +20,6 @@ public class KubernetesPostgresClusterSynchronizationService(IServiceProvider se
 		var clusterRepository = scope.ServiceProvider.GetRequiredService<IRepository<Cluster>>();
 		var clusterManager = scope.ServiceProvider.GetRequiredService<IKubernetesPostgresClusterManager>();
 
-		await ProcessInitializationClustersAsync(clusterRepository, clusterManager);
 		await ProcessStartingClustersAsync(clusterRepository, clusterManager);
 	}
 
@@ -58,7 +57,9 @@ public class KubernetesPostgresClusterSynchronizationService(IServiceProvider se
 	{
 		var startingClusters = clusterRepository
 			.Items
-			.Where(c => c.Status == ClusterStatus.Starting || c.Status == ClusterStatus.Restarting)
+			.Where(c =>
+				c.Status == ClusterStatus.Starting
+				|| c.Status == ClusterStatus.Restarting)
 			.ToList();
 
 		foreach (var cluster in startingClusters)
@@ -67,21 +68,6 @@ public class KubernetesPostgresClusterSynchronizationService(IServiceProvider se
 			if (status is null || !status.IsHealthy()) continue;
 			
 			cluster.Status = ClusterStatus.Running;
-			await clusterRepository.UpdateAsync(cluster);
-		}
-	}
-
-	private async Task ProcessInitializationClustersAsync(IRepository<Cluster> clusterRepository, IKubernetesPostgresClusterManager clusterManager)
-	{
-		var initializationClusters = clusterRepository
-			.Items
-			.Where(c => c.Status == ClusterStatus.Initialization)
-			.ToList();
-
-		foreach (var cluster in initializationClusters)
-		{
-			await clusterManager.CreateClusterAsync(cluster);
-			cluster.Status = ClusterStatus.Starting;
 			await clusterRepository.UpdateAsync(cluster);
 		}
 	}

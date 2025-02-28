@@ -67,6 +67,9 @@ builder.Services.AddSingleton<IPostgresSqlManager, PostgresSqlManager>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreateClusterDto>();
 
+builder.Services.Configure<List<PostgresConfigurationParameter>>(
+	builder.Configuration.GetSection("PostgresConfiguration"));
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())

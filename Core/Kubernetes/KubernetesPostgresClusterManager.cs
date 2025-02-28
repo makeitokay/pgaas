@@ -8,6 +8,7 @@ namespace Core;
 public interface IKubernetesPostgresClusterManager
 {
 	Task CreateClusterAsync(Cluster cluster);
+	Task UpdateClusterAsync(Cluster cluster);
 	Task DeleteClusterAsync(Cluster cluster);
 	Task RestartClusterAsync(Cluster cluster);
 	Task<CloudnativePgClusterStatus?> GetClusterStatusAsync(Cluster cluster);
@@ -31,6 +32,19 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 		
 		var helmRelease = CreateHelmRelease(cluster);
 		await client.CreateNamespacedAsync(helmRelease, cluster.SystemName);
+	}
+
+	public async Task UpdateClusterAsync(Cluster cluster)
+	{
+		using var client = new GenericClient(kubernetes, "helm.toolkit.fluxcd.io", "v2", "helmreleases");
+
+		var existingHelmRelease = await client
+			.ReadNamespacedAsync<FluxHelmRelease>(cluster.SystemName, cluster.SystemName);
+		
+		var helmRelease = CreateHelmRelease(cluster);
+		helmRelease.Metadata.ResourceVersion = existingHelmRelease.Metadata.ResourceVersion;
+
+		await client.ReplaceNamespacedAsync(helmRelease, cluster.SystemName, cluster.SystemName);
 	}
 
 	public Task DeleteClusterAsync(Cluster cluster)
@@ -119,7 +133,8 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 					["cpu"] = $"{configuration.Cpu}m",
 					["databaseName"] = configuration.DatabaseName,
 					["lcCollate"] = configuration.LcCollate,
-					["lcCtype"] = configuration.LcCtype
+					["lcCtype"] = configuration.LcCtype,
+					["postgresqlParameters"] = configuration.Parameters
 				}
 			}
 		};

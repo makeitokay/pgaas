@@ -24,9 +24,9 @@ public class Cluster : BaseEntity
 
 public enum ClusterStatus
 {
-	Initialization,
 	Starting,
 	Restarting,
+	Updating,
 	RecreatingStorage,
 	Running,
 	Deleting,
