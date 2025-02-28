@@ -88,6 +88,9 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 			.Where(p => p.Metadata.Name.StartsWith(cluster.ClusterNameInKubernetes))
 			.ToList();
 
+		if (postgresPods.Count <= 1)
+			throw new InvalidOperationException("Cannot expand storage while cluster has only one instance.");
+
 		foreach (var pod in postgresPods)
 		{
 			var tasks = new List<Task>()
