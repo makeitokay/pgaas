@@ -4,5 +4,5 @@ data:
   password: "{{ .Values.ownerPassword | b64enc  }}"
 kind: Secret
 metadata:
-  name: db-{{ .Values.name }}-owner
+  name: {{ .Values.name }}-owner
 type: kubernetes.io/basic-auth

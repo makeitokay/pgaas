@@ -151,7 +151,13 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 					{
 						["enabled"] = (cluster.SecurityGroupId is not null).ToString().ToLower(),
 						["ips"] = cluster.SecurityGroup?.AllowedIps
-					}
+					},
+					["backups"] = new Dictionary<string, string?>
+					{
+						["enabled"] = (configuration.BackupScheduleCronExpression is not null).ToString().ToLower(),
+						["schedule"] = configuration.BackupScheduleCronExpression,
+						["method"] = configuration.BackupMethod
+					},
 				}
 			}
 		};

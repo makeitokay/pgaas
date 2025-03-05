@@ -31,7 +31,7 @@ public class ClusterController : ControllerBase
 
     [HttpPost]
     [WorkspaceAuthorizationByRole(Role.Editor)]
-    public async Task<IActionResult> CreateOrEdit(int workspaceId, [FromBody] CreateClusterDto createClusterDto)
+    public async Task<IActionResult> CreateOrEditAsync(int workspaceId, [FromBody] CreateClusterDto createClusterDto)
     {
 	    var validationResult = await _validator.ValidateAsync(createClusterDto);
 	    if (!validationResult.IsValid)
@@ -62,7 +62,8 @@ public class ClusterController : ControllerBase
 		    cluster = new Cluster
 		    {
 			    Status = ClusterStatus.Starting,
-			    SystemName = createClusterDto.SystemName
+			    SystemName = createClusterDto.SystemName,
+			    ClusterNameInKubernetes = createClusterDto.SystemName
 		    };
 	    }
 
@@ -89,7 +90,9 @@ public class ClusterController : ControllerBase
             OwnerPassword = createClusterDto.OwnerPassword,
             PoolerMode = createClusterDto.PoolerMode,
             PoolerMaxConnections = createClusterDto.PoolerMaxConnections,
-            PoolerDefaultPoolSize = createClusterDto.PoolerDefaultPoolSize
+            PoolerDefaultPoolSize = createClusterDto.PoolerDefaultPoolSize,
+            BackupScheduleCronExpression = createClusterDto.BackupScheduleCronExpression,
+            BackupMethod = createClusterDto.BackupMethod
         };
         
         if (existingCluster != null)
@@ -108,7 +111,7 @@ public class ClusterController : ControllerBase
 
     [HttpPost("{id}/restart")]
     [WorkspaceAuthorizationByRole(Role.Editor)]
-    public async Task<IActionResult> Restart(int workspaceId, int id)
+    public async Task<IActionResult> RestartAsync(int workspaceId, int id)
     {
         var cluster = await _clusterRepository.TryGetAsync(id);
         if (cluster == null)
@@ -130,7 +133,7 @@ public class ClusterController : ControllerBase
 
     [HttpGet("{id}")]
     [WorkspaceAuthorizationByRole(Role.Viewer)]
-    public async Task<IActionResult> Get(int workspaceId, int id)
+    public async Task<IActionResult> GetAsync(int workspaceId, int id)
     {
         var cluster = await _clusterRepository.TryGetAsync(id);
         if (cluster == null)
@@ -143,7 +146,7 @@ public class ClusterController : ControllerBase
     
     [HttpGet]
     [WorkspaceAuthorizationByRole(Role.Viewer)]
-    public async Task<IActionResult> Get(int workspaceId)
+    public async Task<IActionResult> GetAsync(int workspaceId)
     {
 	    var clusters = await _clusterRepository.Items.Where(c => c.WorkspaceId == workspaceId).ToListAsync();
 	    return Ok(clusters);

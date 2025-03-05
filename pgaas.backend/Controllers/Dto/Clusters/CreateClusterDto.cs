@@ -22,4 +22,8 @@ public class CreateClusterDto
 	public int? PoolerDefaultPoolSize { get; set; }
 	
 	public int? SecurityGroupId { get; set; }
+	
+	public string? BackupScheduleCronExpression { get; set; }
+	
+	public string? BackupMethod { get; set; }
 }

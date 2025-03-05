@@ -120,9 +120,9 @@ public class PostgresController : ControllerBase
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		cluster.Configuration.Parameters = parameters;
-		await _kubernetesPostgresClusterManager.UpdateClusterAsync(cluster);
 		await _clusterRepository.UpdateAsync(cluster);
-		
+		await _kubernetesPostgresClusterManager.UpdateClusterAsync(cluster);
+
 		return Ok();
 	}
 	

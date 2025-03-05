@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: db-{{ .Values.name }}
+  name: {{ .Values.name }}
 spec:
   imageCatalogRef:
     apiGroup: postgresql.cnpg.io
@@ -12,6 +12,7 @@ spec:
   storage:
     size: "{{ .Values.storageSize }}"
     resizeInUseVolumes: "false"
+    storageClass: csi-hostpath-sc
   resources:
     requests:
       memory: "{{ .Values.memory }}"
@@ -23,9 +24,12 @@ spec:
     roles:
       - name: pgaas
         passwordSecret:
-          name: db-{{ .Values.name }}-pgaas-user
+          name: {{ .Values.name }}-pgaas-user
         superuser: true
         login: true
+  backup:
+    volumeSnapshot:
+      className: csi-hostpath-snapclass
   bootstrap:
     initdb:
       database: "{{ .Values.databaseName }}"
@@ -34,7 +38,7 @@ spec:
       localeCollate: '{{ .Values.lcCollate }}'
       localeCType: '{{ .Values.lcCtype }}'
       secret:
-        name: db-{{ .Values.name }}-owner
+        name: {{ .Values.name }}-owner
   postgresql:
     parameters:
       {{- range $key, $value := .Values.postgresqlParameters }}

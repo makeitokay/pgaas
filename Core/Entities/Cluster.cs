@@ -23,7 +23,8 @@ public class Cluster : BaseEntity
 	
 	public virtual ClusterConfiguration Configuration { get; set; }
 
-	public string ClusterNameInKubernetes => $"pg-{SystemName}";
+	[Column("ClusterNameInKubernetes")]
+	public string ClusterNameInKubernetes { get; set; }
 }
 
 

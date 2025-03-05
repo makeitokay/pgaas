@@ -2,10 +2,10 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Pooler
 metadata:
-  name: db-{{ .Values.name }}-pooler
+  name: {{ .Values.name }}-pooler
 spec:
   cluster:
-    name: db-{{ .Values.name }}
+    name: {{ .Values.name }}
 
   instances: 1
   type: rw

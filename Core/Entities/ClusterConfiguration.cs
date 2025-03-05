@@ -51,4 +51,10 @@ public class ClusterConfiguration : BaseEntity
 	
 	[Column("PoolerDefaultPoolSize")]
 	public int? PoolerDefaultPoolSize { get; set; }
+	
+	[Column("BackupScheduleCronExpression")]
+	public string? BackupScheduleCronExpression { get; set; }
+	
+	[Column("BackupMethod")]
+	public string? BackupMethod { get; set; }
 }

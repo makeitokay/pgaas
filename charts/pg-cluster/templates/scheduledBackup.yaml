@@ -1,0 +1,11 @@
+﻿{{- if .Values.backups.enabled }}
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: {{ .Values.name }}
+spec:
+  schedule: {{ .Values.backups.schedule }}
+  method: {{ .Values.backups.method }}
+  cluster:
+    name: {{ .Values.name }}
+{{- end }}
