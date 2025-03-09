@@ -1,4 +1,5 @@
-﻿using Core.Entities;
+﻿using Core;
+using Core.Entities;
 using Core.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using pgaas.backend.Attributes;
@@ -11,11 +12,17 @@ namespace pgaas.Controllers;
 public class BackupController : ControllerBase
 {
 	private readonly IRepository<Cluster> _clusterRepository;
+	private readonly IKubernetesBackupManager _kubernetesBackupManager;
+	private readonly IKubernetesPostgresClusterManager _kubernetesPostgresClusterManager;
 
-	public BackupController(IBackupService backupService, IRepository<Cluster> clusterRepository)
+	public BackupController(
+		IRepository<Cluster> clusterRepository,
+		IKubernetesBackupManager kubernetesBackupManager,
+		IKubernetesPostgresClusterManager kubernetesPostgresClusterManager)
 	{
-		_backupService = backupService;
 		_clusterRepository = clusterRepository;
+		_kubernetesBackupManager = kubernetesBackupManager;
+		_kubernetesPostgresClusterManager = kubernetesPostgresClusterManager;
 	}
 	
 	[HttpGet]
@@ -23,7 +30,7 @@ public class BackupController : ControllerBase
 	public async Task<IActionResult> GetBackups(int workspaceId, int clusterId)
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
-		var backups = await _backupService.GetBackupsAsync(cluster);
+		var backups = await _kubernetesBackupManager.GetBackupsAsync(cluster);
 		return Ok(backups);
 	}
 
@@ -32,8 +39,8 @@ public class BackupController : ControllerBase
 	public async Task<IActionResult> CreateBackup(int workspaceId, int clusterId, [FromBody] CreateBackupRequest request)
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
-		var backupId = await _backupService.CreateBackupAsync(cluster, request.Method);
-		return Ok(new { BackupId = backupId });
+		var backup = await _kubernetesBackupManager.CreateBackupAsync(cluster, request.Method);
+		return Ok(new { Name = backup });
 	}
 
 	[HttpPost("schedule")]
@@ -41,7 +48,28 @@ public class BackupController : ControllerBase
 	public async Task<IActionResult> ScheduleBackup(int workspaceId, int clusterId, [FromBody] BackupScheduleRequest request)
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
-		await _backupService.ScheduleBackupAsync(cluster, request.CronExpression, request.Method);
+		
+		cluster.Configuration.BackupScheduleCronExpression = request.CronExpression;
+		cluster.Configuration.BackupMethod = request.Method;
+		await _clusterRepository.UpdateAsync(cluster);
+		await _kubernetesPostgresClusterManager.UpdateClusterAsync(cluster);
+		return Ok();
+	}
+
+	[HttpPost("recovery")]
+	[WorkspaceAuthorizationByRole(Role.Admin)]
+	public async Task<IActionResult> RecoveryFromBackup(int workspaceId, int clusterId, [FromBody] RecoveryFromBackupRequest request)
+	{
+		var cluster = await _clusterRepository.GetAsync(clusterId);
+		var backups = await _kubernetesBackupManager.GetBackupsAsync(cluster);
+		if (backups.All(b => b.Metadata.Name != request.BackupName))
+			return BadRequest("invalid backup name");
+	    
+		var backup = backups.Single(b => b.Metadata.Name == request.BackupName);
+		cluster.ClusterNameInKubernetes = backup.Metadata.Name;
+		cluster.RecoveryFromBackup = true;
+		await _clusterRepository.UpdateAsync(cluster);
+		await _kubernetesPostgresClusterManager.UpdateClusterAsync(cluster);
 		return Ok();
 	}
 }

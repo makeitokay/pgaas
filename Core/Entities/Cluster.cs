@@ -25,6 +25,9 @@ public class Cluster : BaseEntity
 
 	[Column("ClusterNameInKubernetes")]
 	public string ClusterNameInKubernetes { get; set; }
+	
+	[Column("RecoveryFromBackup")]
+	public bool RecoveryFromBackup { get; set; }
 }
 
 

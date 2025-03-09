@@ -7,19 +7,20 @@ namespace Core;
 
 public interface IKubernetesBackupManager
 {
-	Task CreateBackupAsync(Cluster cluster, string method);
+	Task<CloudnativePgBackup> CreateBackupAsync(Cluster cluster, string method);
 	Task DeleteBackupAsync(Cluster cluster, string backupName);
-	Task RecoveryFromBackupAsync(Cluster cluster, string backupName);
 	Task<List<CloudnativePgBackup>> GetBackupsAsync(Cluster cluster);
 }
 
-public class KubernetesBackupManager(IKubernetes kubernetes) : IKubernetesBackupManager
+public class KubernetesBackupManager(
+	IKubernetes kubernetes,
+	IKubernetesPostgresClusterManager clusterManager) : IKubernetesBackupManager
 {
 	private const string BackupApiGroup = "postgresql.cnpg.io";
 	private const string BackupApiVersion = "v1";
 	private const string BackupPlural = "backups";
 	
-	public async Task CreateBackupAsync(Cluster cluster, string method)
+	public async Task<CloudnativePgBackup> CreateBackupAsync(Cluster cluster, string method)
     {
         var backup = new CloudnativePgBackup
         {
@@ -43,6 +44,8 @@ public class KubernetesBackupManager(IKubernetes kubernetes) : IKubernetesBackup
         using var client = CreateCnpgKubernetesBackupsClient();
 
         await client.CreateNamespacedAsync(backup, cluster.SystemName);
+
+        return backup;
     }
 
     public async Task DeleteBackupAsync(Cluster cluster, string backupName)
@@ -50,11 +53,6 @@ public class KubernetesBackupManager(IKubernetes kubernetes) : IKubernetesBackup
 	    using var client = CreateCnpgKubernetesBackupsClient();
 
 	    await client.DeleteNamespacedAsync<CloudnativePgBackup>(cluster.SystemName, backupName);
-    }
-
-    public async Task RecoveryFromBackupAsync(Cluster cluster, string backupName)
-    {
-	    throw new NotImplementedException();
     }
 
     public async Task<List<CloudnativePgBackup>> GetBackupsAsync(Cluster cluster)

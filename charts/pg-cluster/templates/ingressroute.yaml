@@ -6,7 +6,7 @@ spec:
   entryPoints:
     - pg
   routes:
-    - match: HostSNI(`{{ .Values.name }}.pgaas.ru`)
+    - match: HostSNI(`{{ .Values.systemName }}.pgaas.ru`)
       {{- if .Values.sg.enabled }}
       middlewares:
         - name: {{ .Values.name }}-mdlwr

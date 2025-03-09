@@ -24,19 +24,38 @@ spec:
     roles:
       - name: pgaas
         passwordSecret:
-          name: {{ .Values.name }}-pgaas-user
+          name: {{ .Values.systemName }}-pgaas-user
         superuser: true
         login: true
   backup:
     volumeSnapshot:
       className: csi-hostpath-snapclass
+    barmanObjectStore:
+      destinationPath: s3://pgaas-backups/{{ .Values.name }}
+      endpointURL: https://s3.yandexcloud.net
+      wal:
+        compression: bzip2
+      s3Credentials:
+        accessKeyId:
+          name: {{ .Values.systemName }}-s3
+          key: accessKey
+        secretAccessKey:
+          name: {{ .Values.systemName }}-s3
+          key: secretKey
+
   bootstrap:
+{{- if .Values.recoveryFromBackup.enabled }}
+    recovery:
+      backup:
+        name: {{ .Values.recoveryFromBackup.backupName }}
+{{- else }}
     initdb:
-      database: "{{ .Values.databaseName }}"
-      owner: "{{ .Values.ownerName }}"
       encoding: 'UTF8'
       localeCollate: '{{ .Values.lcCollate }}'
       localeCType: '{{ .Values.lcCtype }}'
+{{- end }}
+      database: "{{ .Values.databaseName }}"
+      owner: "{{ .Values.ownerName }}"
       secret:
         name: {{ .Values.name }}-owner
   postgresql:

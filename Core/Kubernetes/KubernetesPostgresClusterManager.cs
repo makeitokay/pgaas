@@ -128,7 +128,8 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 				Interval = "10m",
 				Values = new Dictionary<string, object?>
 				{
-					["name"] = cluster.SystemName,
+					["name"] = cluster.ClusterNameInKubernetes,
+					["systemName"] = cluster.SystemName,
 					["majorVersion"] = configuration.MajorVersion,
 					["instances"] = configuration.Instances,
 					["storageSize"] = $"{configuration.StorageSize}Gi",
@@ -158,6 +159,11 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 						["schedule"] = configuration.BackupScheduleCronExpression,
 						["method"] = configuration.BackupMethod
 					},
+					["recoveryFromBackup"] = new Dictionary<string, string?>
+					{
+						["enabled"] = cluster.RecoveryFromBackup.ToString().ToLower(),
+						["backupName"] = cluster.ClusterNameInKubernetes
+					}
 				}
 			}
 		};

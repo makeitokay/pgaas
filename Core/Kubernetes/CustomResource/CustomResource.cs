@@ -23,5 +23,5 @@ public class CustomResourceList<TResource> : KubernetesObject
 	public V1ListMeta Metadata { get; set; }
 	
 	[JsonPropertyName("items")]
-	public List<TResource> Items { get; set; }
+	public List<TResource> Items { get; set; } = [];
 }
