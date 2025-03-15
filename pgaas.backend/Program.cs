@@ -7,6 +7,7 @@ using k8s;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using pgaas.backend;
 using pgaas.Controllers.Dto.Clusters;
 
@@ -59,18 +60,53 @@ builder.Services.AddScoped<IKubernetes>(sp =>
 });
 
 builder.Services.AddScoped<IKubernetesPostgresClusterManager, KubernetesPostgresClusterManager>();
+builder.Services.AddScoped<IKubernetesBackupManager, KubernetesBackupManager>();
 builder.Services
 	.AddSingleton<IKubernetesPostgresClusterSynchronizationService, KubernetesPostgresClusterSynchronizationService>();
 
 builder.Services.AddHostedService<KubernetesPostgresClusterSynchronizationTask>();
 builder.Services.AddSingleton<IPostgresSqlManager, PostgresSqlManager>();
+builder.Services.AddSingleton<IPasswordManager, PasswordManager>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreateClusterDto>();
 
 builder.Services.Configure<List<PostgresConfigurationParameter>>(
 	builder.Configuration.GetSection("PostgresConfiguration"));
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+	c.SwaggerDoc("v1", new OpenApiInfo { Title = "pgaas API", Version = "v1" });
+
+	c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+	{
+		In = ParameterLocation.Header,
+		Description = "Please enter token",
+		Name = "Authorization",
+		Type = SecuritySchemeType.Http,
+		BearerFormat = "JWT",
+		Scheme = "bearer"
+	});
+	c.AddSecurityRequirement(new OpenApiSecurityRequirement
+	{
+		{
+			new OpenApiSecurityScheme
+			{
+				Reference = new OpenApiReference
+				{
+					Type=ReferenceType.SecurityScheme,
+					Id="Bearer"
+				}
+			},
+			[]
+		}
+	});
+});
+
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -91,11 +127,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-app.MapGet("/hello", async (IKubernetesPostgresClusterManager manager, ApplicationDbContext dbContext) =>
-{
-	var cluster = await dbContext.Clusters.FirstAsync();
-	await manager.RestartClusterAsync(cluster);
-});
 
 app.Run();

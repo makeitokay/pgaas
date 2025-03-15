@@ -56,16 +56,16 @@ public class WorkspaceController : ControllerBase
 		return Ok();
 	}
 	
-	[HttpPost("{id}/invite")]
+	[HttpPost("{workspaceId}/invite")]
 	[WorkspaceAuthorizationByRole(Role.Admin)]
-	public async Task<IActionResult> InviteUser(int id, [FromBody] InviteUserDto inviteUserDto)
+	public async Task<IActionResult> InviteUser(int workspaceId, [FromBody] InviteUserDto inviteUserDto)
 	{
 		if (string.IsNullOrWhiteSpace(inviteUserDto.Email) || !Enum.IsDefined(typeof(Role), inviteUserDto.Role))
 		{
 			return BadRequest("Invalid email or role.");
 		}
 
-		var workspace = await _repository.TryGetAsync(id);
+		var workspace = await _repository.TryGetAsync(workspaceId);
 		if (workspace == null)
 		{
 			return NotFound("Workspace not found.");
@@ -95,11 +95,11 @@ public class WorkspaceController : ControllerBase
 		return Ok();
 	}
 
-	[HttpGet("{id}")]
+	[HttpGet("{workspaceId}")]
 	[WorkspaceAuthorizationByRole(Role.Viewer)]
-	public async Task<IActionResult> Get(int id)
+	public async Task<IActionResult> Get(int workspaceId)
 	{
-		var workspace = await _repository.TryGetAsync(id);
+		var workspace = await _repository.TryGetAsync(workspaceId);
 		if (workspace == null)
 		{
 			return NotFound();
@@ -114,17 +114,35 @@ public class WorkspaceController : ControllerBase
 		return Ok(workspaceDto);
 	}
 	
-	[HttpGet("{id}/users")]
-	[WorkspaceAuthorizationByRole(Role.Viewer)]
-	public async Task<IActionResult> GetWorkspaceUsers(int id)
+	[HttpGet]
+	[Authorize]
+	public async Task<IActionResult> Get()
 	{
-		var workspace = await _repository.TryGetAsync(id);
+		var workspaces = await _workspaceUserRepository
+			.Items
+			.Where(wu => wu.UserId == User.Claims.GetUserId())
+			.Select(wu => wu.Workspace)
+			.Distinct()
+			.ToListAsync();
+
+		return Ok(workspaces.Select(w => new WorkspaceDto
+		{
+			Id = w.Id,
+			Name = w.Name
+		}));
+	}
+	
+	[HttpGet("{workspaceId}/users")]
+	[WorkspaceAuthorizationByRole(Role.Viewer)]
+	public async Task<IActionResult> GetWorkspaceUsers(int workspaceId)
+	{
+		var workspace = await _repository.TryGetAsync(workspaceId);
 		if (workspace == null)
 		{
 			return NotFound("Workspace not found.");
 		}
 
-		var users = await _workspaceUserRepository.Items.Where(wu => wu.WorkspaceId == id).ToListAsync();
+		var users = await _workspaceUserRepository.Items.Where(wu => wu.WorkspaceId == workspaceId).ToListAsync();
 		var userDtos = users.Select(u => new {
 			u.User.Id,
 			u.User.Email,

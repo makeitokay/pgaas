@@ -28,17 +28,17 @@ public class WorkspaceAuthorizationByRoleAttribute : Attribute, IAsyncActionFilt
 		}
 
 		if (!context.RouteData.Values.TryGetValue("workspaceId", out var workspaceIdObj)
-		    || workspaceIdObj is not int workspaceId)
+		    || workspaceIdObj is null)
 		{
 			context.Result = new BadRequestObjectResult("Workspace ID is missing or invalid.");
 			return;
 		}
 
+		var workspaceId = int.Parse(workspaceIdObj.ToString()!);
 		var repository = context.HttpContext.RequestServices.GetRequiredService<IRepository<WorkspaceUser>>();
-		var hasPermission = await repository.Items.AnyAsync(wu =>
-			wu.User.Email == userEmail && wu.WorkspaceId == workspaceId && wu.Role >= RequiredRole);
+		var wu = await repository.Items.SingleOrDefaultAsync(wu => wu.User.Email == userEmail && wu.WorkspaceId == workspaceId);
 
-		if (!hasPermission)
+		if (wu is null || wu.Role < RequiredRole)
 		{
 			context.Result = new ForbidResult();
 			return;

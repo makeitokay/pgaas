@@ -37,7 +37,7 @@ public class ClusterConfiguration : BaseEntity
 	[Column("OwnerName")]
 	public string OwnerName { get; set; }
 	
-	[Column("OwnerName")]
+	[Column("OwnerPassword")]
 	public string OwnerPassword { get; set; }
 	
 	[Column("Parameters")]

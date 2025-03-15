@@ -11,7 +11,7 @@ public class Cluster : BaseEntity
 	[Column("Status")]
 	public ClusterStatus Status { get; set; }
 	
-	public Workspace Workspace { get; set; }
+	public virtual Workspace Workspace { get; set; }
 	
 	[Column("WorkspaceId")]
 	public int WorkspaceId { get; set; }
@@ -19,7 +19,7 @@ public class Cluster : BaseEntity
 	[Column("SecurityGroupId")]
 	public int? SecurityGroupId { get; set; }
 	
-	public SecurityGroup? SecurityGroup { get; set; }
+	public virtual SecurityGroup? SecurityGroup { get; set; }
 	
 	public virtual ClusterConfiguration Configuration { get; set; }
 

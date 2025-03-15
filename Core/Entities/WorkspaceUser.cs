@@ -11,8 +11,8 @@ public class WorkspaceUser : BaseEntity
 	[Column("Role")]
 	public Role Role { get; set; }
 
-	public User User { get; set; } = null!;
-	public Workspace Workspace { get; set; } = null!;
+	public virtual User User { get; set; } = null!;
+	public virtual Workspace Workspace { get; set; } = null!;
 }
 
 public enum Role

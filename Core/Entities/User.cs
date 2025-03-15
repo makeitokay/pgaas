@@ -20,5 +20,5 @@ public class User : BaseEntity
 	[Column("PasswordSalt")]
 	public byte[] PasswordSalt { get; set; }
 	
-	public ICollection<WorkspaceUser> WorkspaceUsers { get; set; } = new List<WorkspaceUser>();
+	public virtual ICollection<WorkspaceUser> WorkspaceUsers { get; set; } = new List<WorkspaceUser>();
 }

@@ -13,5 +13,5 @@ public class SecurityGroup : BaseEntity
 	[Column("WorkspaceId")]
 	public int WorkspaceId { get; set; }
 	
-	public Workspace Workspace { get; set; }
+	public virtual Workspace Workspace { get; set; }
 }
