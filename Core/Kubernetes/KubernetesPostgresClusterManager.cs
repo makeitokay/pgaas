@@ -12,7 +12,7 @@ public interface IKubernetesPostgresClusterManager
 	Task DeleteClusterAsync(Cluster cluster);
 	Task RestartClusterAsync(Cluster cluster);
 	Task<CloudnativePgClusterStatus?> GetClusterStatusAsync(Cluster cluster);
-	Task RecreateStorage(Cluster cluster);
+	Task<IEnumerable<string>> GetClusterHostsAsync(Cluster cluster);
 }
 
 public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKubernetesPostgresClusterManager
@@ -44,7 +44,7 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 		var helmRelease = CreateHelmRelease(cluster);
 		helmRelease.Metadata.ResourceVersion = existingHelmRelease.Metadata.ResourceVersion;
 
-		await client.ReplaceNamespacedAsync(helmRelease, cluster.SystemName, cluster.SystemName);
+		await client.ReplaceNamespacedAsync(helmRelease, cluster.SystemName, cluster.ClusterNameInKubernetes);
 	}
 
 	public Task DeleteClusterAsync(Cluster cluster)
@@ -77,30 +77,12 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 		return cloudnativePgCluster?.Status;
 	}
 
-	public async Task RecreateStorage(Cluster cluster)
+	public async Task<IEnumerable<string>> GetClusterHostsAsync(Cluster cluster)
 	{
-		using var client = CreateCnpgKubernetesClient();
-
-		var pods = await client.ListNamespacedAsync<V1PodList>(cluster.SystemName);
-
-		var postgresPods = pods
-			.Items
-			.Where(p => p.Metadata.Name.StartsWith(cluster.ClusterNameInKubernetes))
-			.ToList();
-
-		if (postgresPods.Count <= 1)
-			throw new InvalidOperationException("Cannot expand storage while cluster has only one instance.");
-
-		foreach (var pod in postgresPods)
-		{
-			var tasks = new List<Task>()
-			{
-				client.DeleteNamespacedAsync<V1Pod>(cluster.SystemName, pod.Metadata.Name),
-				client.DeleteNamespacedAsync<V1PersistentVolumeClaim>(cluster.SystemName, pod.Metadata.Name)
-			};
-
-			await Task.WhenAll(tasks);
-		}
+		var podList = await kubernetes.CoreV1.ListNamespacedPodAsync(
+			cluster.SystemName,
+			labelSelector: $"cnpg.io/cluster={cluster.ClusterNameInKubernetes}");
+		return podList.Items.Select(pod => pod.Metadata.Name);
 	}
 
 	private FluxHelmRelease CreateHelmRelease(Cluster cluster)

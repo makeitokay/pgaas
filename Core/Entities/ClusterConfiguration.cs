@@ -57,4 +57,10 @@ public class ClusterConfiguration : BaseEntity
 	
 	[Column("BackupMethod")]
 	public string? BackupMethod { get; set; }
+	
+	[Column("SyncReplicas")]
+	public int? SyncReplicas { get; set; }
+	
+	[Column("DataDurability")]
+	public string? DataDurability { get; set; }
 }
