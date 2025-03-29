@@ -7,8 +7,6 @@ namespace Core;
 public interface IKubernetesPostgresClusterSynchronizationService
 {
 	Task SynchronizeAsync();
-
-	Task ExpandStorageAsync();
 }
 
 public class KubernetesPostgresClusterSynchronizationService(IServiceProvider serviceProvider)
@@ -22,36 +20,6 @@ public class KubernetesPostgresClusterSynchronizationService(IServiceProvider se
 
 		await ProcessStartingClustersAsync(clusterRepository, clusterManager);
 		await ProcessRunningClustersAsync(clusterRepository, clusterManager);
-	}
-
-	public async Task ExpandStorageAsync()
-	{
-		using var scope = serviceProvider.CreateScope();
-		var clusterRepository = scope.ServiceProvider.GetRequiredService<IRepository<Cluster>>();
-		var clusterManager = scope.ServiceProvider.GetRequiredService<IKubernetesPostgresClusterManager>();
-
-		var clusters = clusterRepository
-			.Items
-			.Where(c => c.Status == ClusterStatus.RecreatingStorage)
-			.ToList();
-
-		foreach (var cluster in clusters)
-		{
-			var status = await clusterManager.GetClusterStatusAsync(cluster);
-			if (status is null || !status.IsHealthy()) continue;
-
-			try
-			{
-				await clusterManager.RecreateStorage(cluster);
-
-				cluster.Status = ClusterStatus.Running;
-				await clusterRepository.UpdateAsync(cluster);
-			}
-			catch
-			{
-				// ignored
-			}
-		}
 	}
 
 	private async Task ProcessStartingClustersAsync(IRepository<Cluster> clusterRepository, IKubernetesPostgresClusterManager clusterManager)

@@ -21,6 +21,9 @@ else
      - containerPort: 6443
        hostPort: 6443
        protocol: TCP
+     - containerPort: 32091
+       hostPort: 80
+       protocol: TCP
      kubeadmConfigPatches:
      - |
        kind: ClusterConfiguration
@@ -94,6 +97,27 @@ spec:
     app.kubernetes.io/instance: traefik-traefik
 EOF
 
+cat <<EOF | kubectl apply -f -
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-web
+  namespace: traefik
+spec:
+  type: NodePort
+  externalTrafficPolicy: Local
+  ports:
+    - name: web
+      protocol: TCP
+      port: 80
+      targetPort: web
+      nodePort: 32091
+  selector:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik-traefik
+EOF
+
 kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/release-6.3/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
 kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/release-6.3/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
 kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/release-6.3/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml
@@ -113,3 +137,35 @@ reclaimPolicy: Delete
 volumeBindingMode: Immediate
 allowVolumeExpansion: true
 EOF
+
+HELM_CHART_VERSION="69.8.2"
+
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts     
+helm repo update
+
+helm install kube-prom-stack prometheus-community/kube-prometheus-stack --version "${HELM_CHART_VERSION}" \
+  --namespace monitoring \
+  --create-namespace \
+  -f "/Users/vasilyev.a/RiderProjects/pgaas/k8s-prom-stack-values.yaml"
+
+cat <<EOF | kubectl apply -f -
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: grafana-route
+  namespace: monitoring
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`grafana.pgaas.ru`)
+      services:
+      - name: kube-prom-stack-grafana
+        port: 80
+EOF
+
+helm repo add crossplane-stable https://charts.crossplane.io/stable                                  
+helm repo update
+
+helm install crossplane --namespace crossplane-system crossplane-stable/crossplane --create-namespace

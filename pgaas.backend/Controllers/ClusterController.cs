@@ -49,12 +49,9 @@ public class ClusterController : ControllerBase
 			    return BadRequest("Cannot edit non running cluster.");
 			    
 		    cluster = existingCluster;
-		    if (cluster.Configuration.StorageSize != createClusterDto.StorageSize)
+		    if (cluster.Configuration.StorageSize > createClusterDto.StorageSize)
 		    {
-			    if (cluster.Configuration.Instances == 1)
-				    return BadRequest("Cannot expand storage with one instance");
-
-			    cluster.Status = ClusterStatus.RecreatingStorage;
+				return BadRequest("Cannot decrease cluster storage size");
 		    }
 	    }
 	    else

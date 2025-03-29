@@ -11,7 +11,7 @@ spec:
   instances: "{{ .Values.instances }}"
   storage:
     size: "{{ .Values.storageSize }}"
-    resizeInUseVolumes: "false"
+    resizeInUseVolumes: "true"
     storageClass: csi-hostpath-sc
   resources:
     requests:

@@ -39,7 +39,8 @@ builder.Services
 			ValidateAudience = true,
 			ValidAudience = Constants.Authentication.Audience,
 			ValidateLifetime = true,
-			IssuerSigningKey = new SymmetricSecurityKey("PostgreSQLAsAServiceInKubernetesUltraSecretKey2024"u8.ToArray()),
+			IssuerSigningKey =
+				new SymmetricSecurityKey("PostgreSQLAsAServiceInKubernetesUltraSecretKey2024"u8.ToArray()),
 			ValidateIssuerSigningKey = true
 		};
 	});
@@ -78,25 +79,22 @@ builder.Services.AddSwaggerGen(c =>
 {
 	c.SwaggerDoc("v1", new OpenApiInfo { Title = "pgaas API", Version = "v1" });
 
-	c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-	{
-		In = ParameterLocation.Header,
-		Description = "Please enter token",
-		Name = "Authorization",
-		Type = SecuritySchemeType.Http,
-		BearerFormat = "JWT",
-		Scheme = "bearer"
-	});
+	c.AddSecurityDefinition("Bearer",
+		new OpenApiSecurityScheme
+		{
+			In = ParameterLocation.Header,
+			Description = "Please enter token",
+			Name = "Authorization",
+			Type = SecuritySchemeType.Http,
+			BearerFormat = "JWT",
+			Scheme = "bearer"
+		});
 	c.AddSecurityRequirement(new OpenApiSecurityRequirement
 	{
 		{
 			new OpenApiSecurityScheme
 			{
-				Reference = new OpenApiReference
-				{
-					Type=ReferenceType.SecurityScheme,
-					Id="Bearer"
-				}
+				Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
 			},
 			[]
 		}
