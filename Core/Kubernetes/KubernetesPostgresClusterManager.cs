@@ -44,7 +44,7 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 		var helmRelease = CreateHelmRelease(cluster);
 		helmRelease.Metadata.ResourceVersion = existingHelmRelease.Metadata.ResourceVersion;
 
-		await client.ReplaceNamespacedAsync(helmRelease, cluster.SystemName, cluster.ClusterNameInKubernetes);
+		await client.ReplaceNamespacedAsync(helmRelease, cluster.SystemName, cluster.SystemName);
 	}
 
 	public Task DeleteClusterAsync(Cluster cluster)

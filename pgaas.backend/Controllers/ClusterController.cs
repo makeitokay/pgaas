@@ -63,6 +63,21 @@ public class ClusterController : ControllerBase
 			    ClusterNameInKubernetes = createClusterDto.SystemName,
 			    WorkspaceId = workspaceId
 		    };
+
+		    if (createClusterDto.OwnerPassword is null)
+		    {
+			    return BadRequest("Owner password is required.");
+		    }
+
+		    cluster.Configuration = new ClusterConfiguration
+		    {
+			    MajorVersion = createClusterDto.MajorVersion,
+			    DatabaseName = createClusterDto.DatabaseName,
+			    LcCollate = createClusterDto.LcCollate,
+			    LcCtype = createClusterDto.LcCtype,
+			    OwnerPassword = createClusterDto.OwnerPassword,
+			    OwnerName = createClusterDto.OwnerName,
+		    };
 	    }
 
 	    if (createClusterDto.SecurityGroupId is not null)
@@ -74,24 +89,16 @@ public class ClusterController : ControllerBase
 		    cluster.SecurityGroupId = sg.Id;
 		    cluster.SecurityGroup = sg;
 	    }
-        cluster.Configuration = new ClusterConfiguration
-        {
-            StorageSize = createClusterDto.StorageSize,
-            Cpu = createClusterDto.Cpu,
-            Memory = createClusterDto.Memory,
-            MajorVersion = createClusterDto.MajorVersion,
-            DatabaseName = createClusterDto.DatabaseName,
-            LcCollate = createClusterDto.LcCollate,
-            LcCtype = createClusterDto.LcCtype,
-            Instances = createClusterDto.Instances,
-            OwnerName = createClusterDto.OwnerName,
-            OwnerPassword = createClusterDto.OwnerPassword,
-            PoolerMode = createClusterDto.PoolerMode,
-            PoolerMaxConnections = createClusterDto.PoolerMaxConnections,
-            PoolerDefaultPoolSize = createClusterDto.PoolerDefaultPoolSize,
-            BackupScheduleCronExpression = createClusterDto.BackupScheduleCronExpression,
-            BackupMethod = createClusterDto.BackupMethod
-        };
+
+	    cluster.Configuration.StorageSize = createClusterDto.StorageSize;
+	    cluster.Configuration.Cpu = createClusterDto.Cpu;
+	    cluster.Configuration.Memory = createClusterDto.Memory;
+	    cluster.Configuration.Instances = createClusterDto.Instances;
+	    cluster.Configuration.PoolerMode = createClusterDto.PoolerMode;
+	    cluster.Configuration.PoolerMaxConnections = createClusterDto.PoolerMaxConnections;
+	    cluster.Configuration.PoolerDefaultPoolSize = createClusterDto.PoolerDefaultPoolSize;
+	    cluster.Configuration.BackupScheduleCronExpression = createClusterDto.BackupScheduleCronExpression;
+	    cluster.Configuration.BackupMethod = createClusterDto.BackupMethod;
         
         if (existingCluster != null)
         {

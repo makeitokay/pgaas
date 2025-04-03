@@ -13,7 +13,7 @@ public class CreateClusterDto
 	public int Instances { get; set; }
 	public string OwnerName { get; set; } = null!;
 
-	public string OwnerPassword { get; set; } = null!;
+	public string? OwnerPassword { get; set; } = null!;
 	
 	public string? PoolerMode { get; set; }
 	
