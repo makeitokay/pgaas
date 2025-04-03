@@ -205,3 +205,25 @@ stringData:
       "auth": "glsa_NIpChqLJAKleVFFdtAn33EwHP2lc7ifF_a49133a5" 
     }
 EOF
+
+cat <<EOF | kubectl apply -f -
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: cluster-podmonitor
+  namespace: monitoring
+spec:
+  jobLabel: cnpg-cluster
+  selector:
+    matchExpressions:
+      - key: cnpg.io/instanceRole
+        operator: In
+        values:
+          - primary
+          - replica
+  namespaceSelector:
+    any: true
+  podMetricsEndpoints:
+    - port: metrics
+EOF

@@ -126,7 +126,7 @@ public class ClusterController : ControllerBase
         cluster.Status = ClusterStatus.Restarting;
         await _clusterRepository.UpdateAsync(cluster);
 
-        return Ok(cluster);
+        return Ok();
     }
 
     [HttpGet("{id}")]
@@ -139,7 +139,7 @@ public class ClusterController : ControllerBase
             return NotFound();
         }
 
-        return Ok(cluster);
+        return Ok(GetClusterDto(cluster));
     }
     
     [HttpGet]
@@ -147,6 +147,31 @@ public class ClusterController : ControllerBase
     public async Task<IActionResult> GetAsync(int workspaceId)
     {
 	    var clusters = await _clusterRepository.Items.Where(c => c.WorkspaceId == workspaceId).ToListAsync();
-	    return Ok(clusters);
+	    return Ok(clusters.Select(GetClusterDto));
     }
+
+    private object GetClusterDto(Cluster cluster) => new
+    {
+	    cluster.Id,
+	    cluster.Status,
+	    cluster.SystemName,
+	    cluster.SecurityGroupId,
+	    cluster.WorkspaceId,
+	    cluster.Configuration.StorageSize,
+	    cluster.Configuration.Cpu,
+	    cluster.Configuration.Memory,
+	    cluster.Configuration.MajorVersion,
+	    cluster.Configuration.DatabaseName,
+	    cluster.Configuration.LcCollate,
+	    cluster.Configuration.LcCtype,
+	    cluster.Configuration.Instances,
+	    cluster.Configuration.OwnerName,
+	    cluster.Configuration.BackupMethod,
+	    cluster.Configuration.BackupScheduleCronExpression,
+	    cluster.Configuration.PoolerMode,
+	    cluster.Configuration.PoolerMaxConnections,
+	    cluster.Configuration.PoolerDefaultPoolSize,
+	    cluster.Configuration.DataDurability,
+	    cluster.Configuration.SyncReplicas,
+    };
 }
