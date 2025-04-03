@@ -60,7 +60,8 @@ public class ClusterController : ControllerBase
 		    {
 			    Status = ClusterStatus.Starting,
 			    SystemName = createClusterDto.SystemName,
-			    ClusterNameInKubernetes = createClusterDto.SystemName
+			    ClusterNameInKubernetes = createClusterDto.SystemName,
+			    WorkspaceId = workspaceId
 		    };
 	    }
 

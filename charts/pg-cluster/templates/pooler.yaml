@@ -1,4 +1,4 @@
-﻿{{- if .Values.pooler.enabled }}
+﻿{{- if eq .Values.pooler.enabled "true" }}
 apiVersion: postgresql.cnpg.io/v1
 kind: Pooler
 metadata:

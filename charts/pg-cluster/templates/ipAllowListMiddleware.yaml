@@ -1,4 +1,4 @@
-﻿{{- if .Values.sg.enabled }}
+﻿{{- if eq .Values.sg.enabled "true" }}
 apiVersion: traefik.io/v1alpha1
 kind: MiddlewareTCP
 metadata:
@@ -8,5 +8,5 @@ spec:
     sourceRange:
       {{- range $ip := .Values.sg.ips }}
       - {{ $ip }}
-      {{ - end }}
+      {{- end }}
 {{- end }}

@@ -123,7 +123,7 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 					["ownerName"] = configuration.OwnerName,
 					["ownerPassword"] = configuration.OwnerPassword,
 					["postgresqlParameters"] = configuration.Parameters,
-					["pooler"] = new Dictionary<string, string?>
+					["pooler"] = new Dictionary<string, object?>
 					{
 						["enabled"] = (configuration.PoolerMode is not null).ToString().ToLower(),
 						["poolMode"] = configuration.PoolerMode,
@@ -135,13 +135,13 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 						["enabled"] = (cluster.SecurityGroupId is not null).ToString().ToLower(),
 						["ips"] = cluster.SecurityGroup?.AllowedIps
 					},
-					["backups"] = new Dictionary<string, string?>
+					["backups"] = new Dictionary<string, object?>
 					{
 						["enabled"] = (configuration.BackupScheduleCronExpression is not null).ToString().ToLower(),
 						["schedule"] = configuration.BackupScheduleCronExpression,
 						["method"] = configuration.BackupMethod
 					},
-					["recoveryFromBackup"] = new Dictionary<string, string?>
+					["recoveryFromBackup"] = new Dictionary<string, object?>
 					{
 						["enabled"] = cluster.RecoveryFromBackup.ToString().ToLower(),
 						["backupName"] = cluster.ClusterNameInKubernetes

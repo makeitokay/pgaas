@@ -4,6 +4,7 @@ metadata:
   name: {{ .Values.systemName }}
   annotations:
     meta.upbound.io/example-id: oss/v1alpha1/dashboard
+    helm.sh/resource-policy: keep
   labels:
     testing.upbound.io/example-name: {{ .Values.systemName }}
 spec:
@@ -1523,7 +1524,7 @@ spec:
                 "instant": true,
                 "interval": "",
                 "intervalFactor": 1,
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "range": false,
                 "refId": "A"
               }
@@ -2370,7 +2371,7 @@ spec:
                 "format": "time_series",
                 "instant": true,
                 "interval": "",
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "range": false,
                 "refId": "A"
               }
@@ -2813,7 +2814,7 @@ spec:
                 "expr": "1 - cnpg_pg_replication_in_recovery{namespace=~\"$namespace\",pod=~\"$instances\"} + cnpg_pg_replication_is_wal_receiver_up{namespace=~\"$namespace\",pod=~\"$instances\"}",
                 "instant": true,
                 "interval": "",
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -2887,7 +2888,7 @@ spec:
                 "expr": "cnpg_pg_replication_streaming_replicas{namespace=~\"$namespace\", pod=~\"$instances\"}",
                 "instant": true,
                 "interval": "",
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -2959,7 +2960,7 @@ spec:
                 "format": "table",
                 "instant": true,
                 "interval": "",
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -3135,7 +3136,7 @@ spec:
                 "expr": "100 * sum by (pod) (cnpg_backends_total{namespace=~\"$namespace\", pod=~\"$instances\"}) / sum by (pod) (cnpg_pg_settings_setting{name=\"max_connections\", namespace=~\"$namespace\", pod=~\"$instances\"})",
                 "instant": true,
                 "interval": "",
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -3216,7 +3217,7 @@ spec:
                 "expr": "max by (pod) (cnpg_pg_database_xid_age{namespace=~\"$namespace\", pod=~\"$instances\"})",
                 "instant": true,
                 "interval": "",
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -3362,7 +3363,7 @@ spec:
                 "instant": true,
                 "interval": "",
                 "intervalFactor": 1,
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -3477,7 +3478,7 @@ spec:
                 "format": "time_series",
                 "interval": "",
                 "intervalFactor": 2,
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A",
                 "step": 10
               }
@@ -3660,7 +3661,7 @@ spec:
                 "format": "time_series",
                 "interval": "",
                 "intervalFactor": 2,
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A",
                 "step": 10
               }
@@ -3756,7 +3757,7 @@ spec:
                 "expr": "sum(cnpg_backends_total{namespace=~\"$namespace\",pod=~\"$instances\"}) by (pod)",
                 "hide": false,
                 "interval": "",
-                "legendFormat": "total ({{pod}})",
+                "legendFormat": "total ({{`{{pod}}`}})",
                 "refId": "B"
               },
               {
@@ -3767,7 +3768,7 @@ spec:
                 "exemplar": true,
                 "expr": "sum(cnpg_backends_total{namespace=~\"$namespace\",pod=~\"$instances\"}) by (state, pod)",
                 "interval": "",
-                "legendFormat": "{{state}} ({{pod}})",
+                "legendFormat": "{{`{{state}}`}} ({{`{{pod}}`}})",
                 "refId": "A"
               }
             ],
@@ -3865,7 +3866,7 @@ spec:
                 "exemplar": true,
                 "expr": "sum(rate(cnpg_pg_stat_database_xact_commit{namespace=~\"$namespace\",pod=~\"$instances\"}[5m])) by (pod)",
                 "interval": "",
-                "legendFormat": "committed ({{pod}})",
+                "legendFormat": "committed ({{`{{pod}}`}})",
                 "range": true,
                 "refId": "A"
               },
@@ -3878,7 +3879,7 @@ spec:
                 "expr": "sum(rate(cnpg_pg_stat_database_xact_rollback{namespace=~\"$namespace\",pod=~\"$instances\"}[5m])) by (pod)",
                 "hide": false,
                 "interval": "",
-                "legendFormat": "rolled back ({{pod}})",
+                "legendFormat": "rolled back ({{`{{pod}}`}})",
                 "refId": "B"
               }
             ],
@@ -3977,7 +3978,7 @@ spec:
                 "exemplar": true,
                 "expr": "max by (pod) (cnpg_backends_max_tx_duration_seconds{namespace=~\"$namespace\",pod=~\"$instances\"})",
                 "interval": "",
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -4077,7 +4078,7 @@ spec:
                 "hide": false,
                 "instant": false,
                 "interval": "",
-                "legendFormat": "count ({{pod}})",
+                "legendFormat": "count ({{`{{pod}}`}})",
                 "refId": "B"
               }
             ],
@@ -4175,7 +4176,7 @@ spec:
                 "exemplar": true,
                 "expr": "cnpg_backends_waiting_total{namespace=~\"$namespace\",pod=~\"$instances\"}",
                 "interval": "",
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -4263,7 +4264,7 @@ spec:
                 "expr": "max by(persistentvolumeclaim) (1 - kubelet_volume_stats_available_bytes{namespace=\"$namespace\", persistentvolumeclaim=~\"$instances\"} / kubelet_volume_stats_capacity_bytes{namespace=\"$namespace\", persistentvolumeclaim=~\"$instances\"})",
                 "format": "time_series",
                 "interval": "",
-                "legendFormat": "{{persistentvolumeclaim}}",
+                "legendFormat": "{{`{{persistentvolumeclaim}}`}}",
                 "range": true,
                 "refId": "FREE_SPACE"
               },
@@ -4276,7 +4277,7 @@ spec:
                 "expr": "max by(persistentvolumeclaim) (1 - kubelet_volume_stats_available_bytes{namespace=\"$namespace\", persistentvolumeclaim=~\"($${instances})-wal\"} / kubelet_volume_stats_capacity_bytes{namespace=\"$namespace\", persistentvolumeclaim=~\"($${instances})-wal\"})",
                 "format": "time_series",
                 "interval": "",
-                "legendFormat": "{{persistentvolumeclaim}}",
+                "legendFormat": "{{`{{persistentvolumeclaim}}`}}",
                 "range": true,
                 "refId": "FREE_SPACE_WAL"
               }
@@ -4352,7 +4353,7 @@ spec:
                 "expr": "max by(persistentvolumeclaim) (kubelet_volume_stats_inodes_used{namespace=\"$namespace\", persistentvolumeclaim=~\"$instances\"} / kubelet_volume_stats_inodes{namespace=\"$namespace\", persistentvolumeclaim=~\"$instances\"})",
                 "format": "time_series",
                 "interval": "",
-                "legendFormat": "{{persistentvolumeclaim}}",
+                "legendFormat": "{{`{{persistentvolumeclaim}}`}}",
                 "range": true,
                 "refId": "FREE_INODES"
               },
@@ -4365,7 +4366,7 @@ spec:
                 "expr": "max by(persistentvolumeclaim) (kubelet_volume_stats_inodes_used{namespace=\"$namespace\", persistentvolumeclaim=~\"($${instances})-wal\"} / kubelet_volume_stats_inodes{namespace=\"$namespace\", persistentvolumeclaim=~\"($${instances})-wal\"})",
                 "format": "time_series",
                 "interval": "",
-                "legendFormat": "{{persistentvolumeclaim}}",
+                "legendFormat": "{{`{{persistentvolumeclaim}}`}}",
                 "range": true,
                 "refId": "FREE_INODES_WAL"
               }
@@ -4441,7 +4442,7 @@ spec:
                 "expr": "sum by (namespace,persistentvolumeclaim) (kubelet_volume_stats_used_bytes{namespace=\"$namespace\", persistentvolumeclaim=~\"($${instances})-tbs.*\"}) \n/\nsum by (namespace,persistentvolumeclaim) (kubelet_volume_stats_capacity_bytes{namespace=\"$namespace\", persistentvolumeclaim=~\"($${instances})-tbs.*\"}) \n*\non(namespace, persistentvolumeclaim) group_left(volume,pod)\nkube_pod_spec_volumes_persistentvolumeclaims_info{pod=~\"$instances\"}",
                 "format": "time_series",
                 "interval": "",
-                "legendFormat": "{{volume}}-{{pod}}",
+                "legendFormat": "{{`{{volume}}`}}-{{`{{pod}}`}}",
                 "range": true,
                 "refId": "FREE_SPACE"
               }
@@ -4695,7 +4696,7 @@ spec:
                 "exemplar": true,
                 "expr": "rate(cnpg_pg_stat_database_blks_hit{datname=\"\",namespace=~\"$namespace\",pod=~\"$instances\"}[5m])",
                 "interval": "",
-                "legendFormat": "hit ({{pod}})",
+                "legendFormat": "hit ({{`{{pod}}`}})",
                 "range": true,
                 "refId": "A"
               },
@@ -4709,7 +4710,7 @@ spec:
                 "expr": "rate(cnpg_pg_stat_database_blks_read{datname=\"\",namespace=~\"$namespace\",pod=~\"$instances\"}[5m])",
                 "hide": false,
                 "interval": "",
-                "legendFormat": "read ({{pod}})",
+                "legendFormat": "read ({{`{{pod}}`}})",
                 "range": true,
                 "refId": "B"
               }
@@ -4805,7 +4806,7 @@ spec:
                 "exemplar": true,
                 "expr": "max by (datname) (cnpg_pg_database_size_bytes{datname!~\"template.*\",datname!=\"postgres\",namespace=~\"$namespace\",pod=~\"$instances\"})",
                 "interval": "",
-                "legendFormat": " {{pod}}: {{datname}}",
+                "legendFormat": " {{`{{pod}}`}}: {{`{{datname}}`}}",
                 "range": true,
                 "refId": "A"
               }
@@ -4905,7 +4906,7 @@ spec:
                 "expr": "rate(cnpg_pg_stat_database_temp_bytes{datname=\"\",namespace=~\"$namespace\",pod=~\"$instances\"}[5m])",
                 "instant": false,
                 "interval": "",
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -5015,7 +5016,7 @@ spec:
                 "exemplar": true,
                 "expr": "cnpg_collector_pg_wal_archive_status{value=\"ready\",namespace=~\"$namespace\",pod=~\"$instances\"}",
                 "interval": "",
-                "legendFormat": "ready ({{pod}})",
+                "legendFormat": "ready ({{`{{pod}}`}})",
                 "refId": "A"
               },
               {
@@ -5027,7 +5028,7 @@ spec:
                 "expr": "cnpg_collector_pg_wal_archive_status{value=\"done\",namespace=~\"$namespace\",pod=~\"$instances\"}",
                 "hide": false,
                 "interval": "",
-                "legendFormat": "done ({{pod}})",
+                "legendFormat": "done ({{`{{pod}}`}})",
                 "refId": "B"
               }
             ],
@@ -5124,7 +5125,7 @@ spec:
                 "exemplar": true,
                 "expr": "rate(cnpg_pg_stat_archiver_archived_count{namespace=~\"$namespace\",pod=~\"$instances\"}[5m])",
                 "interval": "",
-                "legendFormat": "archived ({{pod}})",
+                "legendFormat": "archived ({{`{{pod}}`}})",
                 "refId": "A"
               },
               {
@@ -5136,7 +5137,7 @@ spec:
                 "expr": "rate(cnpg_pg_stat_archiver_failed_count{namespace=~\"$namespace\",pod=~\"$instances\"}[5m])",
                 "hide": false,
                 "interval": "",
-                "legendFormat": "failed ({{pod}})",
+                "legendFormat": "failed ({{`{{pod}}`}})",
                 "refId": "B"
               }
             ],
@@ -5235,7 +5236,7 @@ spec:
                 "exemplar": true,
                 "expr": "cnpg_pg_stat_archiver_seconds_since_last_archival{namespace=~\"$namespace\",pod=~\"$instances\"}",
                 "interval": "",
-                "legendFormat": "age ({{pod}})",
+                "legendFormat": "age ({{`{{pod}}`}})",
                 "refId": "A"
               }
             ],
@@ -5332,7 +5333,7 @@ spec:
                 "editorMode": "code",
                 "expr": "cnpg_collector_pg_wal{pod=~\"$instances\", namespace=~\"$namespace\", value=\"count\"}",
                 "instant": false,
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "range": true,
                 "refId": "A"
               }
@@ -5449,7 +5450,7 @@ spec:
                 "expr": "cnpg_pg_replication_lag{namespace=~\"$namespace\",pod=~\"$instances\"}",
                 "instant": false,
                 "interval": "",
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -5549,7 +5550,7 @@ spec:
                 "expr": "cnpg_pg_stat_replication_write_lag_seconds{namespace=~\"$namespace\",pod=~\"$instances\"}",
                 "instant": false,
                 "interval": "",
-                "legendFormat": "{{pod}} -> {{application_name}}",
+                "legendFormat": "{{`{{pod}}`}} -> {{`{{application_name}}`}}",
                 "refId": "A"
               }
             ],
@@ -5649,7 +5650,7 @@ spec:
                 "expr": "cnpg_pg_stat_replication_flush_lag_seconds{namespace=~\"$namespace\",pod=~\"$instances\"}",
                 "instant": false,
                 "interval": "",
-                "legendFormat": "{{pod}} -> {{application_name}}",
+                "legendFormat": "{{`{{pod}}`}} -> {{`{{application_name}}`}}",
                 "refId": "A"
               }
             ],
@@ -5749,7 +5750,7 @@ spec:
                 "exemplar": true,
                 "expr": "cnpg_pg_stat_replication_replay_lag_seconds{namespace=~\"$namespace\",pod=~\"$instances\"}",
                 "interval": "",
-                "legendFormat": "{{pod}} -> {{application_name}}",
+                "legendFormat": "{{`{{pod}}`}} -> {{`{{application_name}}`}}",
                 "range": true,
                 "refId": "A"
               }
@@ -5943,7 +5944,7 @@ spec:
                 "exemplar": true,
                 "expr": "cnpg_collector_last_collection_error{namespace=~\"$namespace\",pod=~\"$instances\"}",
                 "interval": "",
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -6055,7 +6056,7 @@ spec:
                 "expr": "cnpg_collector_first_recoverability_point{namespace=~\"$namespace\",pod=~\"$instances\"}*1000 > 0",
                 "format": "time_series",
                 "interval": "",
-                "legendFormat": "{{pod}}",
+                "legendFormat": "{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -6171,7 +6172,7 @@ spec:
                 "instant": false,
                 "interval": "",
                 "intervalFactor": 1,
-                "legendFormat": "req/{{pod}}",
+                "legendFormat": "req/{{`{{pod}}`}}",
                 "refId": "B"
               },
               {
@@ -6184,7 +6185,7 @@ spec:
                 "format": "time_series",
                 "interval": "",
                 "intervalFactor": 1,
-                "legendFormat": "timed/{{pod}}",
+                "legendFormat": "timed/{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -6287,7 +6288,7 @@ spec:
                 "instant": false,
                 "interval": "",
                 "intervalFactor": 1,
-                "legendFormat": "write/{{pod}}",
+                "legendFormat": "write/{{`{{pod}}`}}",
                 "refId": "B"
               },
               {
@@ -6300,7 +6301,7 @@ spec:
                 "format": "time_series",
                 "interval": "",
                 "intervalFactor": 1,
-                "legendFormat": "sync/{{pod}}",
+                "legendFormat": "sync/{{`{{pod}}`}}",
                 "refId": "A"
               }
             ],
@@ -6332,8 +6333,8 @@ spec:
             },
             {
               "current": {
-                "text": "test",
-                "value": "test"
+                "text": "{{ .Values.systemName }}",
+                "value": "{{ .Values.systemName }}"
               },
               "datasource": {
                 "type": "prometheus",
@@ -6355,8 +6356,8 @@ spec:
             },
             {
               "current": {
-                "text": "db-test",
-                "value": "db-test"
+                "text": "{{ .Values.name }}",
+                "value": "{{ .Values.name }}"
               },
               "datasource": {
                 "type": "prometheus",
@@ -6414,8 +6415,8 @@ spec:
           "nowDelay": ""
         },
         "timezone": "",
-        "title": "db-test",
-        "uid": "db-test",
+        "title": "{{ .Values.name }}",
+        "uid": "{{ .Values.name }}",
         "version": 6,
         "weekStart": ""
       }

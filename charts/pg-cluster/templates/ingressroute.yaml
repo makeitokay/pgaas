@@ -7,12 +7,12 @@ spec:
     - pg
   routes:
     - match: HostSNI(`{{ .Values.systemName }}.pgaas.ru`)
-      {{- if .Values.sg.enabled }}
+      {{- if eq .Values.sg.enabled "true" }}
       middlewares:
         - name: {{ .Values.name }}-mdlwr
-      {{ - end }}
+      {{- end }}
       services:
-        {{- if .Values.pooler.enabled }}
+        {{- if eq .Values.pooler.enabled "true" }}
         - name: {{ .Values.name }}-pooler
         {{- else }}
         - name: {{ .Values.name }}-rw

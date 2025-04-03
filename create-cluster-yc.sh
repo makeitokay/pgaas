@@ -169,3 +169,39 @@ helm repo add crossplane-stable https://charts.crossplane.io/stable
 helm repo update
 
 helm install crossplane --namespace crossplane-system crossplane-stable/crossplane --create-namespace
+
+cat <<EOF | kubectl apply -f -
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-grafana
+  namespace: crossplane-system
+spec:
+  package: xpkg.upbound.io/grafana/provider-grafana:v0.9.0
+---
+apiVersion: grafana.crossplane.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: grafana-providerconfig
+  namespace: crossplane-system
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      name: grafana-cloud-creds
+      namespace: crossplane-system
+      key: credentials
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-cloud-creds
+  namespace: crossplane-system
+stringData:
+  credentials: |
+    { 
+      "url": "http://kube-prom-stack-grafana.monitoring.svc.cluster.local", 
+      "auth": "glsa_NIpChqLJAKleVFFdtAn33EwHP2lc7ifF_a49133a5" 
+    }
+EOF

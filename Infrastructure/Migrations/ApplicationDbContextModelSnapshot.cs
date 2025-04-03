@@ -99,6 +99,10 @@ namespace Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("Cpu");
 
+                    b.Property<string>("DataDurability")
+                        .HasColumnType("text")
+                        .HasColumnName("DataDurability");
+
                     b.Property<string>("DatabaseName")
                         .IsRequired()
                         .HasColumnType("text")
@@ -155,6 +159,10 @@ namespace Infrastructure.Migrations
                     b.Property<int>("StorageSize")
                         .HasColumnType("integer")
                         .HasColumnName("StorageSize");
+
+                    b.Property<int?>("SyncReplicas")
+                        .HasColumnType("integer")
+                        .HasColumnName("SyncReplicas");
 
                     b.HasKey("Id");
 
