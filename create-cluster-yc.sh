@@ -202,7 +202,7 @@ stringData:
   credentials: |
     { 
       "url": "http://kube-prom-stack-grafana.monitoring.svc.cluster.local", 
-      "auth": "glsa_NIpChqLJAKleVFFdtAn33EwHP2lc7ifF_a49133a5" 
+      "auth": "*" 
     }
 EOF
 
