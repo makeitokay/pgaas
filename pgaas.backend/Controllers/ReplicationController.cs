@@ -56,6 +56,10 @@ public class ReplicationController : ControllerBase
         if (cluster.Configuration.Instances <= 1) return BadRequest("Cannot delete host from cluster");
         
         cluster.Configuration.Instances -= 1;
+        if (cluster.Configuration.SyncReplicas > cluster.Configuration.Instances - 1)
+        {
+            cluster.Configuration.SyncReplicas = cluster.Configuration.Instances - 1;
+        }
         await _clusterRepository.UpdateAsync(cluster);
         await _kubernetesPostgresClusterManager.UpdateClusterAsync(cluster);    
         return Ok();
@@ -68,9 +72,9 @@ public class ReplicationController : ControllerBase
         var cluster = await _clusterRepository.TryGetAsync(clusterId);
         if (cluster == null) return NotFound();
 
-        if (settings.SyncReplicas > cluster.Configuration.Instances - 1)
+        if (settings.SyncReplicas > cluster.Configuration.Instances - 1 || settings.SyncReplicas <= 0)
         {
-	        return BadRequest("Sync replicas should be less or equal than cluster replicas");
+	        return BadRequest("Sync replicas should be less or equal than cluster replicas and greater than zero.");
         }
         
         cluster.Configuration.SyncReplicas = settings.SyncReplicas;

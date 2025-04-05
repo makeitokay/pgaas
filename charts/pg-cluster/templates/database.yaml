@@ -59,6 +59,12 @@ spec:
       secret:
         name: {{ .Values.name }}-owner
   postgresql:
+  {{- if gt (int .Values.instances) 1 }}
+    synchronous:
+      method: any
+      number: {{ .Values.syncReplicas }}
+      dataDurability: "{{ .Values.dataDurability }}"
+  {{- end }}
     parameters:
       pg_stat_statements.max: "10000"
       pg_stat_statements.track: all

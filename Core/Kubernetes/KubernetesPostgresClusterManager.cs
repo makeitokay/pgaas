@@ -90,7 +90,7 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient
 	{
 		var podList = await kubernetes.CoreV1.ListNamespacedPodAsync(
 			cluster.SystemName,
-			labelSelector: $"cnpg.io/cluster={cluster.ClusterNameInKubernetes}");
+			labelSelector: $"cnpg.io/cluster={cluster.ClusterNameInKubernetes},cnpg.io/podRole=instance");
 		return podList.Items.Select(pod => pod.Metadata.Name);
 	}
 
@@ -181,6 +181,8 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient
 					["ownerName"] = configuration.OwnerName,
 					["ownerPassword"] = configuration.OwnerPassword,
 					["postgresqlParameters"] = configuration.Parameters,
+					["dataDurability"] = configuration.DataDurability ?? "preferred",
+					["syncReplicas"] = configuration.SyncReplicas ?? 1,
 					["pooler"] = new Dictionary<string, object?>
 					{
 						["enabled"] = (configuration.PoolerMode is not null).ToString().ToLower(),
