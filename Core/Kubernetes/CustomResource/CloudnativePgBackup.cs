@@ -4,7 +4,8 @@ namespace Core.Kubernetes.CustomResource;
 
 public class CloudnativePgBackup : CustomResource<CloudnativePgBackupSpec>
 {
-	
+	[JsonPropertyName("status")]
+	public Dictionary<string, object> Status { get; set; }
 }
 
 public class CloudnativePgBackupList : CustomResourceList<CloudnativePgBackup>

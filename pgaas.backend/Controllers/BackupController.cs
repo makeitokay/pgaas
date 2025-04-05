@@ -31,7 +31,7 @@ public class BackupController : ControllerBase
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		var backups = await _kubernetesBackupManager.GetBackupsAsync(cluster);
-		return Ok(backups);
+		return Ok(backups.Select(b => new { b.Status }));
 	}
 
 	[HttpPost]
@@ -40,7 +40,7 @@ public class BackupController : ControllerBase
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		var backup = await _kubernetesBackupManager.CreateBackupAsync(cluster, request.Method);
-		return Ok(new { Name = backup });
+		return Ok(new { backup });
 	}
 
 	[HttpPost("schedule")]
