@@ -90,6 +90,10 @@ public class ClusterController : ControllerBase
 		    cluster.SecurityGroupId = sg.Id;
 		    cluster.SecurityGroup = sg;
 	    }
+	    else
+	    {
+		    cluster.SecurityGroupId = null;
+	    }
 
 	    cluster.Configuration.StorageSize = createClusterDto.StorageSize;
 	    cluster.Configuration.Cpu = createClusterDto.Cpu;

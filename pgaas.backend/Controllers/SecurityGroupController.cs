@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using Core;
 using Core.Entities;
 using Core.Repositories;
 using Microsoft.AspNetCore.Mvc;
@@ -13,12 +14,19 @@ namespace pgaas.Controllers;
 public class SecurityGroupController : ControllerBase
 {
 	private readonly IRepository<SecurityGroup> _repository;
+	private readonly IRepository<Cluster> _clusterRepository;
+	private readonly IKubernetesPostgresClusterManager _kubernetesPostgresClusterManager;
 
-	private static readonly string _ipRegex = @"^((\\d{1,3}\\.){3}\\d{1,3})(\\/(3[0-2]|[1-2]?[0-9]))?$";
+	private static readonly string _ipRegex = @"^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)([\/][0-3][0-2]?|[\/][1-2][0-9]|[\/][0-9])?$";
 
-	public SecurityGroupController(IRepository<SecurityGroup> repository)
+	public SecurityGroupController(
+		IRepository<SecurityGroup> repository,
+		IKubernetesPostgresClusterManager kubernetesPostgresClusterManager,
+		IRepository<Cluster> clusterRepository)
 	{
 		_repository = repository;
+		_kubernetesPostgresClusterManager = kubernetesPostgresClusterManager;
+		_clusterRepository = clusterRepository;
 	}
 
 	[HttpGet]
@@ -29,7 +37,7 @@ public class SecurityGroupController : ControllerBase
 			.Items
 			.Where(sg => sg.WorkspaceId == workspaceId)
 			.ToListAsync();
-		return Ok(securityGroups);
+		return Ok(securityGroups.Select(sg => new { sg.Id, sg.WorkspaceId, sg.Name, sg.AllowedIps}));
 	}
 
 	[HttpPost]
@@ -59,6 +67,17 @@ public class SecurityGroupController : ControllerBase
 			securityGroup.Name = request.Name;
 			securityGroup.AllowedIps = request.AllowedIps;
 			await _repository.UpdateAsync(securityGroup);
+			
+			var clusters = _clusterRepository.Items
+				.Where(c =>
+					c.WorkspaceId == workspaceId
+					&& c.SecurityGroupId == securityGroup.Id)
+				.ToList();
+
+			foreach (var cluster in clusters)
+			{
+				await _kubernetesPostgresClusterManager.UpdateClusterAsync(cluster);
+			}
 		}
         
 		return Ok();
