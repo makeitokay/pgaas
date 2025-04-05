@@ -21,7 +21,8 @@ public class ClusterController : ControllerBase
     public ClusterController(
 	    IRepository<Cluster> clusterRepository,
 	    IKubernetesPostgresClusterManager kubernetesPostgresClusterManager,
-	    IValidator<CreateClusterDto> validator, IRepository<SecurityGroup> securityGroupRepository)
+	    IValidator<CreateClusterDto> validator,
+	    IRepository<SecurityGroup> securityGroupRepository)
     {
 	    _clusterRepository = clusterRepository;
 	    _kubernetesPostgresClusterManager = kubernetesPostgresClusterManager;
@@ -124,7 +125,7 @@ public class ClusterController : ControllerBase
             return NotFound();
         }
 
-        if (cluster.Status > ClusterStatus.Deleting)
+        if (cluster.Status == ClusterStatus.Deleted)
         {
             return BadRequest("Cannot restart a deleted cluster.");
         }
@@ -153,8 +154,37 @@ public class ClusterController : ControllerBase
     [WorkspaceAuthorizationByRole(Role.Viewer)]
     public async Task<IActionResult> GetAsync(int workspaceId)
     {
-	    var clusters = await _clusterRepository.Items.Where(c => c.WorkspaceId == workspaceId).ToListAsync();
+	    var clusters = await _clusterRepository
+		    .Items
+		    .Where(c => c.WorkspaceId == workspaceId && c.Status != ClusterStatus.Deleted)
+		    .ToListAsync();
 	    return Ok(clusters.Select(GetClusterDto));
+    }
+    
+    [HttpDelete("{id}")]
+    [WorkspaceAuthorizationByRole(Role.Admin)]
+    public async Task<IActionResult> DeleteAsync(int workspaceId, int id)
+    {
+	    var cluster = await _clusterRepository.TryGetAsync(id);
+	    if (cluster == null)
+	    {
+		    return NotFound();
+	    }
+	    
+	    await _kubernetesPostgresClusterManager.DeleteClusterAsync(cluster);
+	    cluster.Status = ClusterStatus.Deleted;
+	    await _clusterRepository.UpdateAsync(cluster);
+
+	    return Ok();
+    }
+    
+    [HttpGet("{systemName}/exists")]
+    public async Task<IActionResult> IsClusterExistsAsync(int workspaceId, string systemName)
+    {
+	    var existingCluster = await _clusterRepository.Items
+		    .FirstOrDefaultAsync(c => c.SystemName == systemName);
+
+	    return Ok(new { Exists = existingCluster is not null });
     }
 
     private object GetClusterDto(Cluster cluster) => new

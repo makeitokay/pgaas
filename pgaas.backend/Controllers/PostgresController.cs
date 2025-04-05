@@ -62,7 +62,7 @@ public class PostgresController : ControllerBase
 	public async Task<IActionResult> CreateOrUpdateUserAsync(int workspaceId, int clusterId, [FromBody] CreateUserRequest request)
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
-		await _postgresSqlManager.CreateOrUpdateUserAsync(cluster, request.Username, request.Password, request.Database, request.Roles, request.ExpiryDate);
+		await _postgresSqlManager.CreateOrUpdateUserAsync(cluster, request.Username, request.Password, request.Database, request.Roles ?? [], request.ExpiryDate);
 		return Ok();
 	}
 
@@ -72,7 +72,7 @@ public class PostgresController : ControllerBase
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		var users = await _postgresSqlManager.GetUsersAsync(cluster);
-		return Ok(users);
+		return Ok(users.Select(u => new { u.Username, u.Roles, u.ExpiryDate }));
 	}
 	
 	[HttpGet("roles")]
@@ -89,6 +89,8 @@ public class PostgresController : ControllerBase
 	public async Task<IActionResult> DeleteUserAsync(int workspaceId, int clusterId, string username)
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
+		if (username == cluster.Configuration.OwnerName || username == "pgaas")
+			return BadRequest("Cannot delete this user.");
 		await _postgresSqlManager.DeleteUserAsync(cluster, username);
 		return Ok();
 	}

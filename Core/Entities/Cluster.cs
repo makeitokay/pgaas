@@ -35,9 +35,6 @@ public enum ClusterStatus
 {
 	Starting,
 	Restarting,
-	Updating,
-	RecreatingStorage,
 	Running,
-	Deleting,
 	Deleted
 }

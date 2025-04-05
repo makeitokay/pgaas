@@ -1,4 +1,8 @@
-﻿using Core.Entities;
+﻿using System.Globalization;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Core.Entities;
 using Core.Kubernetes.CustomResource;
 using k8s;
 using k8s.Models;
@@ -13,10 +17,13 @@ public interface IKubernetesPostgresClusterManager
 	Task RestartClusterAsync(Cluster cluster);
 	Task<CloudnativePgClusterStatus?> GetClusterStatusAsync(Cluster cluster);
 	Task<IEnumerable<string>> GetClusterHostsAsync(Cluster cluster);
+	Task<object> GetResourceUsageAsync(Cluster cluster);
 }
 
-public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKubernetesPostgresClusterManager
+public class KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient httpClient) : IKubernetesPostgresClusterManager
 {
+	private readonly string _prometheusBaseUrl = "http://localhost:9090";
+	
 	public async Task CreateClusterAsync(Cluster cluster)
 	{
 		if (!await IsNamespaceExistAsync(cluster.SystemName))
@@ -47,9 +54,11 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 		await client.ReplaceNamespacedAsync(helmRelease, cluster.SystemName, cluster.SystemName);
 	}
 
-	public Task DeleteClusterAsync(Cluster cluster)
+	public async Task DeleteClusterAsync(Cluster cluster)
 	{
-		throw new NotImplementedException();
+		using var client = new GenericClient(kubernetes, "helm.toolkit.fluxcd.io", "v2", "helmreleases");
+
+		await client.DeleteNamespacedAsync<FluxHelmRelease>(cluster.SystemName, cluster.SystemName);
 	}
 
 	public async Task RestartClusterAsync(Cluster cluster)
@@ -83,6 +92,55 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 			cluster.SystemName,
 			labelSelector: $"cnpg.io/cluster={cluster.ClusterNameInKubernetes}");
 		return podList.Items.Select(pod => pod.Metadata.Name);
+	}
+
+	public async Task<object> GetResourceUsageAsync(Cluster cluster)
+	{
+		var pods = await GetClusterHostsAsync(cluster);
+		var result = new List<object>();
+
+		foreach (var pod in pods)
+		{
+			var ns = cluster.SystemName;
+
+			var cpuQuery =
+				$"sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{{namespace=\"{ns}\", pod=\"{pod}\"}}) / " +
+				$"sum(kube_pod_container_resource_requests{{job=\"kube-state-metrics\", namespace=\"{ns}\", resource=\"cpu\", pod=\"{pod}\"}})";
+
+			var memQuery =
+				$"sum(container_memory_working_set_bytes{{job=\"kubelet\", metrics_path=\"/metrics/cadvisor\", namespace=\"{ns}\", pod=~\"{pod}\"}}) / " +
+				$"sum(max by(pod) (kube_pod_container_resource_requests{{job=\"kube-state-metrics\", namespace=\"{ns}\", resource=\"memory\", pod=~\"{pod}\"}}))";
+
+			var storageQuery =
+				$"max(sum by(pod)(cnpg_pg_database_size_bytes{{namespace=\"{ns}\"}}) / " +
+				$"sum by (pod) (label_replace(kube_persistentvolumeclaim_resource_requests_storage_bytes{{namespace=\"{ns}\"}},  \"pod\", \"$1\", \"persistentvolumeclaim\", \"(.*)\")))";
+
+			var cpu = await QueryPrometheus(cpuQuery);
+			var mem = await QueryPrometheus(memQuery);
+			var storage = await QueryPrometheus(storageQuery);
+
+			result.Add(new
+			{
+				Pod = pod,
+				CpuUsage = cpu,
+				MemoryUsage = mem,
+				StorageUsage = storage
+			});
+		}
+
+		return result;
+	}
+	
+	private async Task<double?> QueryPrometheus(string query)
+	{
+		var url = $"{_prometheusBaseUrl}/api/v1/query?query={Uri.EscapeDataString(query)}";
+		var response = await httpClient.GetAsync(url);
+		response.EnsureSuccessStatusCode();
+
+		var json = await response.Content.ReadFromJsonAsync<PrometheusQueryResult>();
+		var value = Convert.ToDouble(json?.Data.Result.FirstOrDefault()?.Value.ElementAtOrDefault(1).GetString(),
+			CultureInfo.InvariantCulture);
+		return value;
 	}
 
 	private FluxHelmRelease CreateHelmRelease(Cluster cluster)
@@ -177,4 +235,25 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes) : IKuberne
 	}
 
 	private GenericClient CreateCnpgKubernetesClient() => new(kubernetes, "postgresql.cnpg.io", "v1", "clusters");
+	
+	private class PrometheusQueryResult
+	{
+		[JsonPropertyName("status")]
+		public string Status { get; set; }
+
+		[JsonPropertyName("data")]
+		public PrometheusData Data { get; set; }
+	}
+
+	private class PrometheusData
+	{
+		[JsonPropertyName("result")]
+		public List<PrometheusResult> Result { get; set; }
+	}
+
+	private class PrometheusResult
+	{
+		[JsonPropertyName("value")]
+		public JsonElement[] Value { get; set; }
+	}
 }

@@ -60,6 +60,8 @@ spec:
         name: {{ .Values.name }}-owner
   postgresql:
     parameters:
+      pg_stat_statements.max: "10000"
+      pg_stat_statements.track: all
       {{- range $key, $value := .Values.postgresqlParameters }}
       {{$key}}: "{{$value}}"
       {{- end }}

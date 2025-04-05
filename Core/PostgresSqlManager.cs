@@ -11,14 +11,18 @@ public interface IPostgresSqlManager
 	Task DeleteDatabaseAsync(Cluster cluster, string database);
 	Task DeleteUserAsync(Cluster cluster, string username);
 
-	Task<IEnumerable<(string Username, List<string> Roles, DateTime? ExpiryDate)>> GetUsersAsync(Cluster cluster);
+	Task<IEnumerable<(string Username, string[] Roles, DateTime? ExpiryDate)>> GetUsersAsync(Cluster cluster);
 	Task<List<string>> GetRolesAsync(Cluster cluster);
 	Task<List<string>> GetDatabasesAsync(Cluster cluster);
 	Task<IDictionary<string, string>> GetConfigurationAsync(Cluster cluster);
 	Task<List<string>> GetConfigurationInvalidParameters(Cluster cluster);
+	
+	Task<IEnumerable<object>> GetTopQueriesAsync(Cluster cluster);
+	Task<IEnumerable<object>> GetDeadlocksAsync(Cluster cluster);
+
 }
 
-public class PostgresSqlManager : IPostgresSqlManager
+public class PostgresSqlManager(bool useLocalKubernetesAddress) : IPostgresSqlManager
 {
 	public async Task CreateOrUpdateUserAsync(Cluster cluster, string username, string password, string database,
 		List<string> roles, DateTime? expiryDate = null)
@@ -29,7 +33,7 @@ public class PostgresSqlManager : IPostgresSqlManager
 		}
 		
 		var expirySql = expiryDate.HasValue ? $"VALID UNTIL '{expiryDate.Value:yyyy-MM-dd HH:mm:ss}'" : "";
-		var rolesSql = roles.Any() ? $"GRANT {string.Join(", ", roles)} TO {username};" : "";
+		var rolesSql = roles.Count != 0 ? $"GRANT {string.Join(", ", roles)} TO {username};" : "";
 
 		var revokePgRolesSql = $@"
             DO $$
@@ -108,6 +112,69 @@ public class PostgresSqlManager : IPostgresSqlManager
 		return results.ToList();
 	}
 
+	public async Task<IEnumerable<object>> GetTopQueriesAsync(Cluster cluster)
+	{
+		var result = new List<object>();
+		var connectionString = GetConnectionString(cluster);
+		await using var connection = new NpgsqlConnection(connectionString);
+		await connection.OpenAsync();
+
+		var cmd = new NpgsqlCommand(@"
+                SELECT query, total_exec_time, calls,
+                       mean_exec_time, stddev_exec_time,
+                       rows, shared_blks_hit, shared_blks_read
+                FROM pg_stat_statements
+                ORDER BY total_exec_time DESC
+                LIMIT 10;", connection);
+
+		await using var reader = await cmd.ExecuteReaderAsync();
+		while (await reader.ReadAsync())
+		{
+			result.Add(new
+			{
+				Query = reader["query"].ToString(),
+				TotalExecTime = reader["total_exec_time"],
+				Calls = reader["calls"],
+				MeanExecTime = reader["mean_exec_time"],
+				StddevExecTime = reader["stddev_exec_time"],
+				Rows = reader["rows"],
+				SharedBlocksHit = reader["shared_blks_hit"],
+				SharedBlocksRead = reader["shared_blks_read"]
+			});
+		}
+		return result;
+	}
+
+
+	public async Task<IEnumerable<object>> GetDeadlocksAsync(Cluster cluster)
+	{
+		var result = new List<object>();
+		var connectionString = GetConnectionString(cluster);
+		await using var connection = new NpgsqlConnection(connectionString);
+		await connection.OpenAsync();
+
+		var cmd = new NpgsqlCommand(@"SELECT datname, deadlocks FROM pg_stat_database where datname not in ('postgres', 'template1', 'template0') and datname is not null;", connection);
+
+		try
+		{
+			await using var reader = await cmd.ExecuteReaderAsync();
+			while (await reader.ReadAsync())
+			{
+				result.Add(new
+				{
+					Database = reader["datname"].ToString(),
+					DeadlockCount = reader["deadlocks"]
+				});
+			}
+		}
+		catch
+		{
+			result.Add(new { Error = "Deadlock log data not accessible." });
+		}
+
+		return result;
+	}
+
 	public async Task DeleteDatabaseAsync(Cluster cluster, string database)
 	{
 		var dropDbSql = $"DROP DATABASE IF EXISTS {database};";
@@ -142,47 +209,19 @@ public class PostgresSqlManager : IPostgresSqlManager
 		await connection.ExecuteAsync(deleteUserSql);
 	}
 
-	public async Task UpdateUserAsync(Cluster cluster, string username, string newPassword, List<string> newRoles,
-		DateTime? newExpiryDate)
-	{
-		var expirySql = newExpiryDate.HasValue ? $"VALID UNTIL '{newExpiryDate.Value:yyyy-MM-dd HH:mm:ss}'" : "";
-
-		var connectionString = GetConnectionString(cluster);
-		await using var connection = new NpgsqlConnection(connectionString);
-		await connection.OpenAsync();
-
-		var revokeRolesSql = $@"
-            DO $$
-            DECLARE r RECORD;
-            BEGIN
-                FOR r IN (SELECT grantee, granted_role FROM information_schema.role_table_grants WHERE grantee = '{username}' AND granted_role LIKE 'pg_\%') LOOP
-                    EXECUTE 'REVOKE ' || r.granted_role || ' FROM {username}';
-                END LOOP;
-            END $$;
-        ";
-		await connection.ExecuteAsync(revokeRolesSql);
-
-		var rolesSql = string.Join(", ", newRoles);
-		var updateUserSql = $@"
-            ALTER ROLE {username} WITH PASSWORD '{newPassword}' {expirySql};
-            GRANT {rolesSql} TO {username};
-        ";
-		await connection.ExecuteAsync(updateUserSql);
-	}
-
-	public async Task<IEnumerable<(string Username, List<string> Roles, DateTime? ExpiryDate)>> GetUsersAsync(
+	public async Task<IEnumerable<(string Username, string[] Roles, DateTime? ExpiryDate)>> GetUsersAsync(
 		Cluster cluster)
 	{
 		var getUsersSql = @"
 		SELECT rolname AS username,
 		       ARRAY(SELECT r.rolname FROM pg_roles r JOIN pg_auth_members m ON r.oid = m.roleid WHERE m.member = u.oid) AS roles,
 		       rolvaliduntil AS expirydate
-		FROM pg_roles u where rolname not like 'pg\_%' and rolname not in ('postgres', 'streaming_replica');
+		FROM pg_roles u where rolname not like 'pg\_%' and rolname not in ('postgres', 'streaming_replica') and rolname != 'pgaas';
         ";
 		var connectionString = GetConnectionString(cluster);
 		await using var connection = new NpgsqlConnection(connectionString);
 		await connection.OpenAsync();
-		return await connection.QueryAsync<(string, List<string>, DateTime?)>(getUsersSql);
+		return await connection.QueryAsync<(string, string[], DateTime?)>(getUsersSql);
 	}
 
 	public async Task<List<string>> GetRolesAsync(Cluster cluster)
@@ -197,16 +236,20 @@ public class PostgresSqlManager : IPostgresSqlManager
 		return (await connection.QueryAsync<string>(getRolesSql)).ToList();
 	}
 
-	private static string GetConnectionString(Cluster cluster)
+	private string GetConnectionString(Cluster cluster)
 	{
+		var host = useLocalKubernetesAddress
+			? $"{cluster.ClusterNameInKubernetes}-rw.{cluster.SystemName}"
+			: $"localhost:5433";
 		var builder = new NpgsqlConnectionStringBuilder
 		{
-			Host = $"{cluster.ClusterNameInKubernetes}-rw.{cluster.SystemName}",
+			Host = host,
 			Port = 5432,
 			Username = "pgaas",
 			Password = "qwerty123",
 			Database = "postgres",
-			Pooling = true
+			Pooling = true,
+			SslMode = SslMode.Disable
 		};
 		return builder.ConnectionString;
 	}

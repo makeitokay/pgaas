@@ -66,13 +66,16 @@ builder.Services
 	.AddSingleton<IKubernetesPostgresClusterSynchronizationService, KubernetesPostgresClusterSynchronizationService>();
 
 builder.Services.AddHostedService<KubernetesPostgresClusterSynchronizationTask>();
-builder.Services.AddSingleton<IPostgresSqlManager, PostgresSqlManager>();
+builder.Services.AddSingleton<IPostgresSqlManager>(_ =>
+	new PostgresSqlManager(!builder.Environment.IsDevelopment()));
 builder.Services.AddSingleton<IPasswordManager, PasswordManager>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreateClusterDto>();
 
 builder.Services.Configure<List<PostgresConfigurationParameter>>(
 	builder.Configuration.GetSection("PostgresConfiguration"));
+
+builder.Services.AddHttpClient<IKubernetesPostgresClusterManager, KubernetesPostgresClusterManager>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
