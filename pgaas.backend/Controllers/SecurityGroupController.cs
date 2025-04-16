@@ -71,7 +71,8 @@ public class SecurityGroupController : ControllerBase
 			var clusters = _clusterRepository.Items
 				.Where(c =>
 					c.WorkspaceId == workspaceId
-					&& c.SecurityGroupId == securityGroup.Id)
+					&& c.SecurityGroupId == securityGroup.Id
+					&& c.Status != ClusterStatus.Deleted)
 				.ToList();
 
 			foreach (var cluster in clusters)
@@ -84,12 +85,28 @@ public class SecurityGroupController : ControllerBase
 	}
 
 	[HttpDelete("{id:int}")]
+	[WorkspaceAuthorizationByRole(Role.Admin)]
 	public async Task<IActionResult> DeleteAsync(int workspaceId, int id)
 	{
 		var securityGroup = await _repository.TryGetAsync(id);
 		if (securityGroup == null || securityGroup.WorkspaceId != workspaceId)
 		{
 			return NotFound();
+		}
+		
+		var clusters = _clusterRepository.Items
+			.Where(c =>
+				c.WorkspaceId == workspaceId
+				&& c.SecurityGroupId == securityGroup.Id)
+			.ToList();
+		
+		foreach (var cluster in clusters)
+		{
+			cluster.SecurityGroupId = null;
+			await _clusterRepository.UpdateAsync(cluster);
+			
+			if (cluster.Status != ClusterStatus.Deleted)
+				await _kubernetesPostgresClusterManager.UpdateClusterAsync(cluster);
 		}
         
 		await _repository.DeleteAsync(securityGroup);

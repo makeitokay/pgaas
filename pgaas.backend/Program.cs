@@ -1,3 +1,4 @@
+using System.Text;
 using Core;
 using Core.Repositories;
 using FluentValidation;
@@ -116,6 +117,8 @@ using (var scope = app.Services.CreateScope())
 	context.Database.Migrate();
 }
 
+app.UseCors("CORSPolicy");
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -128,5 +131,22 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+
+if (app.Environment.IsDevelopment())
+{
+	app.MapGet("/routes", (IEnumerable<EndpointDataSource> endpointSources) =>
+	{
+		var sb = new StringBuilder();
+		foreach (var endpoint in endpointSources.SelectMany(es => es.Endpoints))
+		{
+			if (endpoint is RouteEndpoint routeEndpoint)
+			{ 
+				sb.AppendLine(routeEndpoint.RoutePattern.RawText);
+			}
+		}
+		return sb.ToString();
+	});
+}
 
 app.Run();

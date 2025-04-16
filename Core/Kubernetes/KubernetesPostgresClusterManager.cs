@@ -22,7 +22,7 @@ public interface IKubernetesPostgresClusterManager
 
 public class KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient httpClient) : IKubernetesPostgresClusterManager
 {
-	private readonly string _prometheusBaseUrl = "http://localhost:9090";
+	private readonly string _prometheusBaseUrl = "http://kube-prom-stack-kube-prome-prometheus.monitoring.svc.cluster.local:9090";
 	
 	public async Task CreateClusterAsync(Cluster cluster)
 	{

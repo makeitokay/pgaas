@@ -12,10 +12,12 @@ spec:
       labels:
         app: pgaas-backend
     spec:
+      imagePullSecrets:
+      - name: ghcr-secret
       serviceAccountName: pgaas-sa
       containers:
         - name: pgaas-backend
-          image: "kind-registry:5000/pgaas-backend:latest"
+          image: "ghcr.io/makeitokay/pgaas_backend:latest"
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: DevelopmentKubernetes

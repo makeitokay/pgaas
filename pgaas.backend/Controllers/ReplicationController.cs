@@ -67,6 +67,7 @@ public class ReplicationController : ControllerBase
     }
 
     [HttpPost("settings")]
+    [WorkspaceAuthorizationByRole(Role.Editor)]
     public async Task<IActionResult> SetReplicationSettingsAsync(int workspaceId, int clusterId, [FromBody] ReplicationSettingsDto settings)
     {
         var cluster = await _clusterRepository.TryGetAsync(clusterId);

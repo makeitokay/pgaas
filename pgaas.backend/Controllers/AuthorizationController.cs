@@ -70,7 +70,7 @@ public class AuthorizationController(
 			issuer: Constants.Authentication.Issuer,
 			audience: Constants.Authentication.Audience,
 			claims: userClaims,
-			expires: DateTime.UtcNow.Add(TimeSpan.FromDays(1)),
+			expires: DateTime.UtcNow.Add(TimeSpan.FromDays(365)),
 			signingCredentials: new SigningCredentials(
 				new SymmetricSecurityKey("PostgreSQLAsAServiceInKubernetesUltraSecretKey2024"u8.ToArray()),
 				SecurityAlgorithms.HmacSha256));
