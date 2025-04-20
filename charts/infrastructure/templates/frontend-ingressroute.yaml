@@ -1,0 +1,12 @@
+﻿apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: pgaas-frontend
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`pgaas.ru`)
+      services:
+        - name: pgaas-frontend
+          port: 5173

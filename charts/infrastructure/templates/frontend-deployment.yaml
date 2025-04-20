@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgaas-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgaas-frontend
+  template:
+    metadata:
+      labels:
+        app: pgaas-frontend
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      serviceAccountName: pgaas-sa
+      containers:
+        - name: pgaas-frontend
+          image: "ghcr.io/makeitokay/pgaas_frontend:latest"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 5173
+              protocol: TCP
