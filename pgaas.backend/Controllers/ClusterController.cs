@@ -161,6 +161,7 @@ public class ClusterController : ControllerBase
 	    var clusters = await _clusterRepository
 		    .Items
 		    .Where(c => c.WorkspaceId == workspaceId && c.Status != ClusterStatus.Deleted)
+		    .OrderByDescending(c => c.Id)
 		    .ToListAsync();
 	    return Ok(clusters.Select(GetClusterDto));
     }
