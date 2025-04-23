@@ -72,7 +72,7 @@ public class PostgresController : ControllerBase
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		var users = await _postgresSqlManager.GetUsersAsync(cluster);
-		return Ok(users.Select(u => new { u.Username, u.Roles, u.ExpiryDate }));
+		return Ok(users.Select(u => new { u.Username, u.Roles, u.ExpiryDate, canBeEdited = u.Username != cluster.Configuration.OwnerName }));
 	}
 	
 	[HttpGet("roles")]
@@ -142,10 +142,10 @@ public class PostgresController : ControllerBase
 		if (configurationInDatabase is null)
 			return Ok(ConfigurationReadinessDto.Success());
 
-		var mismatchedParameters = configuration
+		var mismatchedParameters = configurationInDatabase
 			.Where(kv =>
 			{
-				configurationInDatabase.TryGetValue(kv.Key, out var valueInDatabase);
+				configuration.TryGetValue(kv.Key, out var valueInDatabase);
 				return kv.Value != valueInDatabase
 				       && !(string.IsNullOrWhiteSpace(kv.Value) && string.IsNullOrWhiteSpace(valueInDatabase));
 			})

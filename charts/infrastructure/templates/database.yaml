@@ -6,6 +6,11 @@ spec:
   instances: 1
   storage:
     size: 1Gi
+  resources:
+    requests:
+      memory: "600Mi"
+    limits:
+      memory: "600Mi"
   bootstrap:
     initdb:
       database: "pgaas"

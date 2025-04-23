@@ -153,6 +153,12 @@ public class KubernetesPostgresClusterManager : IKubernetesPostgresClusterManage
 	private FluxHelmRelease CreateHelmRelease(Cluster cluster)
 	{
 		var configuration = cluster.Configuration;
+		
+		var updatedParameters = cluster.Configuration.Parameters?.ToDictionary(
+			kvp => kvp.Key,
+			kvp => TransformParameter(kvp.Key, kvp.Value)
+		);
+		
 		var helmRelease = new FluxHelmRelease
 		{
 			Kind = "HelmRelease",
@@ -187,7 +193,7 @@ public class KubernetesPostgresClusterManager : IKubernetesPostgresClusterManage
 					["lcCtype"] = configuration.LcCtype,
 					["ownerName"] = configuration.OwnerName,
 					["ownerPassword"] = configuration.OwnerPassword,
-					["postgresqlParameters"] = configuration.Parameters,
+					["postgresqlParameters"] = updatedParameters,
 					["dataDurability"] = configuration.DataDurability ?? "preferred",
 					["syncReplicas"] = configuration.SyncReplicas ?? 1,
 					["pooler"] = new Dictionary<string, object?>
@@ -217,6 +223,16 @@ public class KubernetesPostgresClusterManager : IKubernetesPostgresClusterManage
 			}
 		};
 		return helmRelease;
+
+		string? TransformParameter(string key, string? value)
+		{
+			if (key == "shared_buffers" && int.TryParse(value, out var numericValue))
+			{
+				return $"{numericValue * 8}kB";
+			}
+
+			return value;
+		}
 	}
 
 	private async Task<bool> IsNamespaceExistAsync(string ns)
