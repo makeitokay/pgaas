@@ -1,0 +1,29 @@
+defaultRules:
+  create: true
+  rules:
+    etcd: false
+    kubeScheduler: false
+
+kubeScheduler:
+  enabled: false
+
+kubeEtcd:
+  enabled: false
+
+alertmanager:
+  enabled: false
+
+grafana:
+  grafana.ini:
+    security:
+      allow_embedding: true
+    auth.anonymous:
+      enabled: true
+  enabled: true
+  adminPassword: prom-operator
+
+prometheusOperator:
+  enabled: true
+
+prometheus:
+  enabled: true

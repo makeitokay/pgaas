@@ -9,7 +9,7 @@ using k8s.Models;
 
 namespace Core;
 
-public interface IKubernetesPostgresClusterManager
+public interface IKubernetesPostgresClusterManager : IDisposable
 {
 	Task CreateClusterAsync(Cluster cluster);
 	Task UpdateClusterAsync(Cluster cluster);
@@ -20,14 +20,24 @@ public interface IKubernetesPostgresClusterManager
 	Task<object> GetResourceUsageAsync(Cluster cluster);
 }
 
-public class KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient httpClient) : IKubernetesPostgresClusterManager
+public class KubernetesPostgresClusterManager : IKubernetesPostgresClusterManager
 {
+	private readonly IKubernetes _kubernetes;
+	private readonly HttpClient _httpClient;
+	private readonly GenericClient _cnpgClient;
 	private readonly string _prometheusBaseUrl = "http://kube-prom-stack-kube-prome-prometheus.monitoring.svc.cluster.local:9090";
+
+	public KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient httpClient)
+	{
+		_kubernetes = kubernetes;
+		_httpClient = httpClient;
+		_cnpgClient = new GenericClient(kubernetes, "postgresql.cnpg.io", "v1", "clusters");
+	}
 	
 	public async Task CreateClusterAsync(Cluster cluster)
 	{
 		if (!await IsNamespaceExistAsync(cluster.SystemName))
-			await kubernetes.CoreV1.CreateNamespaceAsync(new V1Namespace
+			await _kubernetes.CoreV1.CreateNamespaceAsync(new V1Namespace
 			{
 				Metadata = new V1ObjectMeta
 				{
@@ -35,7 +45,7 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient
 				}
 			});
 
-		using var client = new GenericClient(kubernetes, "helm.toolkit.fluxcd.io", "v2", "helmreleases");
+		using var client = new GenericClient(_kubernetes, "helm.toolkit.fluxcd.io", "v2", "helmreleases");
 		
 		var helmRelease = CreateHelmRelease(cluster);
 		await client.CreateNamespacedAsync(helmRelease, cluster.SystemName);
@@ -43,7 +53,7 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient
 
 	public async Task UpdateClusterAsync(Cluster cluster)
 	{
-		using var client = new GenericClient(kubernetes, "helm.toolkit.fluxcd.io", "v2", "helmreleases");
+		using var client = new GenericClient(_kubernetes, "helm.toolkit.fluxcd.io", "v2", "helmreleases");
 
 		var existingHelmRelease = await client
 			.ReadNamespacedAsync<FluxHelmRelease>(cluster.SystemName, cluster.SystemName);
@@ -56,15 +66,13 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient
 
 	public async Task DeleteClusterAsync(Cluster cluster)
 	{
-		using var client = new GenericClient(kubernetes, "helm.toolkit.fluxcd.io", "v2", "helmreleases");
+		using var client = new GenericClient(_kubernetes, "helm.toolkit.fluxcd.io", "v2", "helmreleases");
 
 		await client.DeleteNamespacedAsync<FluxHelmRelease>(cluster.SystemName, cluster.SystemName);
 	}
 
 	public async Task RestartClusterAsync(Cluster cluster)
 	{
-		using var client = CreateCnpgKubernetesClient();
-		
 		var patchStr = $$"""
 		                 {
 		                     "metadata": {
@@ -74,21 +82,20 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient
 		                     }
 		                 }
 		                 """;
-		await client.PatchNamespacedAsync<CloudnativePgCluster>(new V1Patch(patchStr, V1Patch.PatchType.MergePatch),
+		await _cnpgClient.PatchNamespacedAsync<CloudnativePgCluster>(new V1Patch(patchStr, V1Patch.PatchType.MergePatch),
 			cluster.SystemName, cluster.ClusterNameInKubernetes);
 	}
 
 	public async Task<CloudnativePgClusterStatus?> GetClusterStatusAsync(Cluster cluster)
 	{
-		using var client = CreateCnpgKubernetesClient();
-		var cloudnativePgCluster = await client
+		var cloudnativePgCluster = await _cnpgClient
 			.ReadNamespacedAsync<CloudnativePgCluster>(cluster.SystemName, cluster.ClusterNameInKubernetes);
 		return cloudnativePgCluster?.Status;
 	}
 
 	public async Task<IEnumerable<string>> GetClusterHostsAsync(Cluster cluster)
 	{
-		var podList = await kubernetes.CoreV1.ListNamespacedPodAsync(
+		var podList = await _kubernetes.CoreV1.ListNamespacedPodAsync(
 			cluster.SystemName,
 			labelSelector: $"cnpg.io/cluster={cluster.ClusterNameInKubernetes},cnpg.io/podRole=instance");
 		return podList.Items.Select(pod => pod.Metadata.Name);
@@ -134,7 +141,7 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient
 	private async Task<double?> QueryPrometheus(string query)
 	{
 		var url = $"{_prometheusBaseUrl}/api/v1/query?query={Uri.EscapeDataString(query)}";
-		var response = await httpClient.GetAsync(url);
+		var response = await _httpClient.GetAsync(url);
 		response.EnsureSuccessStatusCode();
 
 		var json = await response.Content.ReadFromJsonAsync<PrometheusQueryResult>();
@@ -216,7 +223,7 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient
 	{
 		try
 		{
-			await kubernetes.CoreV1.ReadNamespaceAsync(ns);
+			await _kubernetes.CoreV1.ReadNamespaceAsync(ns);
 		}
 		catch (AggregateException e)
 		{
@@ -236,8 +243,6 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient
 		return true;
 	}
 
-	private GenericClient CreateCnpgKubernetesClient() => new(kubernetes, "postgresql.cnpg.io", "v1", "clusters");
-	
 	private class PrometheusQueryResult
 	{
 		[JsonPropertyName("status")]
@@ -257,5 +262,11 @@ public class KubernetesPostgresClusterManager(IKubernetes kubernetes, HttpClient
 	{
 		[JsonPropertyName("value")]
 		public JsonElement[] Value { get; set; }
+	}
+
+	public void Dispose()
+	{
+		_cnpgClient.Dispose();
+		_httpClient.Dispose();
 	}
 }

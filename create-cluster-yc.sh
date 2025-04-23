@@ -213,6 +213,8 @@ kind: PodMonitor
 metadata:
   name: cluster-podmonitor
   namespace: monitoring
+  labels:
+    release: kube-prom-stack
 spec:
   jobLabel: cnpg-cluster
   selector:
