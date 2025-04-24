@@ -77,7 +77,10 @@ public class WorkspaceController : ControllerBase
 			return NotFound("User not found.");
 		}
 
-		var existingWorkspaceUser = await _workspaceUserRepository.GetAsync(user.Id);
+		var existingWorkspaceUser = await _workspaceUserRepository
+			.Items
+			.Where(wu => wu.WorkspaceId == workspaceId && wu.UserId == user.Id)
+			.FirstOrDefaultAsync();
 		if (existingWorkspaceUser != null)
 		{
 			return BadRequest("User is already in the workspace.");
