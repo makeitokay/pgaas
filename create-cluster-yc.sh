@@ -3,8 +3,10 @@ set -o errexit
 
 CLUSTER_NAME="pgaas"
 
-GITHUB_USERNAME = "<username_here>"
-GITHUB_TOKEN = "<token_here>"
+GITHUB_USERNAME="<username_here>"
+GITHUB_TOKEN="<token_here>"
+GHCR_REPOSITORY="ghcr.io/<username_here>/pgaas"
+EMAIL="<email_here>"
 
 if kind get clusters | grep -q "$CLUSTER_NAME"; then
     echo "Cluster '$CLUSTER_NAME' already exists."
@@ -13,7 +15,15 @@ else
    kind: Cluster
    apiVersion: kind.x-k8s.io/v1alpha4
    nodes:
+   - role: worker
+     labels:
+       topology.kubernetes.io/zone: "ru-central1-a"
+   - role: worker
+     labels:
+       topology.kubernetes.io/zone: "ru-central1-b"
    - role: control-plane
+     labels:
+       topology.kubernetes.io/zone: "ru-central1-c"
      extraPortMappings:
      - containerPort: 32090
        hostPort: 5432
@@ -39,6 +49,13 @@ fi
 
 kind export kubeconfig -n $CLUSTER_NAME
 
+kubectl create ns infrastructure
+kubectl -n infrastructure create secret docker-registry ghcr-secret \
+  --docker-server=ghcr.io \
+  --docker-username=$GITHUB_USERNAME \
+  --docker-password=$GITHUB_TOKEN \
+  --docker-email=$EMAIL
+
 kubectl apply --server-side -f \
   https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.25/releases/cnpg-1.25.0.yaml
 
@@ -63,7 +80,7 @@ metadata:
 spec:
   type: "oci"
   interval: 5m0s
-  url: oci://ghcr.io/makeitokay/pgaas
+  url: oci://$GHCR_REPOSITORY
   secretRef:
     name: pgaas-oci-creds
 EOF
@@ -124,7 +141,7 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snaps
 kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v6.3.3/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
 kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v6.3.3/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
 
-bash /home/makeitokay/csi-driver-host-path/deploy/kubernetes-latest/deploy.sh
+bash ./csi-driver-host-path/deploy/kubernetes-latest/deploy.sh
 
 cat <<EOF | kubectl apply -f -
 ---
@@ -146,7 +163,7 @@ helm repo update
 helm install kube-prom-stack prometheus-community/kube-prometheus-stack --version "${HELM_CHART_VERSION}" \
   --namespace monitoring \
   --create-namespace \
-  -f "/Users/vasilyev.a/RiderProjects/pgaas/k8s-prom-stack-values.yaml"
+  -f "k8s-prom-stack-values.yaml"
 
 cat <<EOF | kubectl apply -f -
 ---
@@ -169,42 +186,6 @@ helm repo add crossplane-stable https://charts.crossplane.io/stable
 helm repo update
 
 helm install crossplane --namespace crossplane-system crossplane-stable/crossplane --create-namespace
-
-cat <<EOF | kubectl apply -f -
----
-apiVersion: pkg.crossplane.io/v1
-kind: Provider
-metadata:
-  name: provider-grafana
-  namespace: crossplane-system
-spec:
-  package: xpkg.upbound.io/grafana/provider-grafana:v0.9.0
----
-apiVersion: grafana.crossplane.io/v1beta1
-kind: ProviderConfig
-metadata:
-  name: grafana-providerconfig
-  namespace: crossplane-system
-spec:
-  credentials:
-    source: Secret
-    secretRef:
-      name: grafana-cloud-creds
-      namespace: crossplane-system
-      key: credentials
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: grafana-cloud-creds
-  namespace: crossplane-system
-stringData:
-  credentials: |
-    { 
-      "url": "http://kube-prom-stack-grafana.monitoring.svc.cluster.local", 
-      "auth": "*" 
-    }
-EOF
 
 cat <<EOF | kubectl apply -f -
 ---

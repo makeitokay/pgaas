@@ -9,6 +9,13 @@ spec:
     name: postgresql
     major: {{ .Values.majorVersion }}
   instances: {{ .Values.instances }}
+  affinity:
+    topologyKey: topology.kubernetes.io/zone
+    podAntiAffinityType: preferred
+    tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
   storage:
     size: "{{ .Values.storageSize }}"
     resizeInUseVolumes: true
