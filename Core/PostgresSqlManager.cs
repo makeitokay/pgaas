@@ -6,7 +6,7 @@ namespace Core;
 
 public interface IPostgresSqlManager
 {
-	Task CreateOrUpdateUserAsync(Cluster cluster, string username, string password, string database, List<string> roles, DateTime? expiryDate = null);
+	Task CreateOrUpdateUserAsync(Cluster cluster, string username, string? password, string database, List<string> roles, DateTime? expiryDate = null);
 	Task CreateDatabaseAsync(Cluster cluster, string database, string owner, string lcCollate, string lcCtype);
 	Task DeleteDatabaseAsync(Cluster cluster, string database);
 	Task DeleteUserAsync(Cluster cluster, string username);
@@ -24,14 +24,14 @@ public interface IPostgresSqlManager
 
 public class PostgresSqlManager(bool useLocalKubernetesAddress) : IPostgresSqlManager
 {
-	public async Task CreateOrUpdateUserAsync(Cluster cluster, string username, string password, string database,
+	public async Task CreateOrUpdateUserAsync(Cluster cluster, string username, string? password, string database,
 		List<string> roles, DateTime? expiryDate = null)
 	{
 		if (username.StartsWith("pg_"))
 		{
 			throw new ArgumentException("Cannot create user starting with pg_%.");
 		}
-		
+
 		var expirySql = expiryDate.HasValue ? $"VALID UNTIL '{expiryDate.Value:yyyy-MM-dd HH:mm:ss}'" : "";
 		var rolesSql = roles.Count != 0 ? $"GRANT {string.Join(", ", roles)} TO {username};" : "";
 
@@ -55,9 +55,9 @@ public class PostgresSqlManager(bool useLocalKubernetesAddress) : IPostgresSqlMa
             DO $$
             BEGIN
                 IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{username}') THEN
-                    CREATE ROLE {username} WITH LOGIN PASSWORD '{password}' {expirySql};
+                    {(password == null ? "RAISE EXCEPTION 'Password is required when creating a new user';" : $"CREATE ROLE {username} WITH LOGIN PASSWORD '{password}' {expirySql};")}
                 ELSE
-                    ALTER ROLE {username} WITH LOGIN PASSWORD '{password}' {expirySql};
+                    ALTER ROLE {username} WITH LOGIN {(password != null ? $"PASSWORD '{password}'" : "")} {expirySql};
                 END IF;
             END $$;
             {revokePgRolesSql}

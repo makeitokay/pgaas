@@ -1,7 +1,7 @@
 ﻿apiVersion: v1
 data:
-  username: "{{ .Values.ownerName | b64enc  }}"
-  password: "{{ .Values.ownerPassword | b64enc  }}"
+  username: "{{ .Values.ownerName | b64enc }}"
+  password: "{{ .Values.ownerPassword | b64enc }}"
 kind: Secret
 metadata:
   name: {{ .Values.name }}-owner
