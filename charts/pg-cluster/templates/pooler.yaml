@@ -2,7 +2,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Pooler
 metadata:
-  name: {{ .Values.name }}-pooler
+  name: {{ .Values.systemName }}-pooler
 spec:
   cluster:
     name: {{ .Values.name }}

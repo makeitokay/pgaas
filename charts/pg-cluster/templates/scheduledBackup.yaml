@@ -2,7 +2,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: {{ .Values.name }}
+  name: {{ .Values.systemName }}
 spec:
   schedule: {{ .Values.backups.schedule }}
   method: {{ .Values.backups.method }}

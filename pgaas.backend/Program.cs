@@ -53,7 +53,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql
 
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-builder.Services.AddScoped<IKubernetes>(sp =>
+builder.Services.AddTransient<IKubernetes>(sp =>
 {
 	var config = builder.Environment.IsDevelopment()
 		? KubernetesClientConfiguration.BuildConfigFromConfigFile()

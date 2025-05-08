@@ -68,6 +68,7 @@ public class BackupController : ControllerBase
 		var backup = backups.Single(b => b.Metadata.Name == request.BackupName);
 		cluster.ClusterNameInKubernetes = backup.Metadata.Name;
 		cluster.RecoveryFromBackup = true;
+		cluster.Configuration.Parameters = null;
 		await _clusterRepository.UpdateAsync(cluster);
 		await _kubernetesPostgresClusterManager.UpdateClusterAsync(cluster);
 		return Ok();

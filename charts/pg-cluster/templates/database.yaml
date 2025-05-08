@@ -64,7 +64,7 @@ spec:
       database: "{{ .Values.databaseName }}"
       owner: "{{ .Values.ownerName }}"
       secret:
-        name: {{ .Values.name }}-owner
+        name: {{ .Values.systemName }}-owner
   postgresql:
   {{- if gt (int .Values.instances) 1 }}
     synchronous:
