@@ -31,7 +31,10 @@ public class BackupController : ControllerBase
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		var backups = await _kubernetesBackupManager.GetBackupsAsync(cluster);
-		return Ok(backups.Select(b => new { b.Status }));
+		return Ok(backups.Select(b => new
+		{
+			b.Status, b.Metadata
+		}));
 	}
 
 	[HttpPost]

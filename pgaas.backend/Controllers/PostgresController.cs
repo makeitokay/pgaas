@@ -72,7 +72,9 @@ public class PostgresController : ControllerBase
 	{
 		var cluster = await _clusterRepository.GetAsync(clusterId);
 		var users = await _postgresSqlManager.GetUsersAsync(cluster);
-		return Ok(users.Select(u => new { u.Username, u.Roles, u.ExpiryDate, canBeEdited = u.Username != cluster.Configuration.OwnerName }));
+		return Ok(users
+			.Select(u => new { u.Username, u.Roles, u.ExpiryDate, canBeEdited = u.Username != cluster.Configuration.OwnerName })
+			.OrderBy(u => u.Username));
 	}
 	
 	[HttpGet("roles")]

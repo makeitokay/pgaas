@@ -51,7 +51,7 @@ public class KubernetesPostgresClusterSynchronizationService(IServiceProvider se
 		foreach (var cluster in clusters)
 		{
 			var status = await clusterManager.GetClusterStatusAsync(cluster);
-			if (status is null || !status.IsRestarting()) continue;
+			if (status is null || status.IsHealthy()) continue;
 			
 			cluster.Status = ClusterStatus.Restarting;
 			await clusterRepository.UpdateAsync(cluster);

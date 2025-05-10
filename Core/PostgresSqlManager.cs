@@ -218,7 +218,7 @@ public class PostgresSqlManager(bool useLocalKubernetesAddress) : IPostgresSqlMa
 		SELECT rolname AS username,
 		       ARRAY(SELECT r.rolname FROM pg_roles r JOIN pg_auth_members m ON r.oid = m.roleid WHERE m.member = u.oid) AS roles,
 		       rolvaliduntil AS expirydate
-		FROM pg_roles u where rolname not like 'pg\_%' and rolname not in ('postgres', 'streaming_replica') and rolname != 'pgaas';
+		FROM pg_roles u where rolname not like 'pg\_%' and rolname not in ('postgres', 'streaming_replica') and rolname != 'pgaas' and rolname != 'cnpg_pooler_pgbouncer';
         ";
 		var connectionString = GetConnectionString(cluster);
 		await using var connection = new NpgsqlConnection(connectionString);
