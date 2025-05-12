@@ -2,4 +2,4 @@ apiVersion: v2
 name: pg-cluster
 description: Chart for creating PostgreSQL clusters with CloudnativePG
 type: application
-version: 1.0.24
+version: 1.0.25

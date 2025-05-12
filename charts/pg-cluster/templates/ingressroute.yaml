@@ -19,4 +19,7 @@ spec:
         {{- end }}
           port: 5432
   tls:
-    passthrough: true
+    passthrough: false
+    secretName: {{ .Values.systemName }}-tls
+    options:
+      name: postgres-tls-options

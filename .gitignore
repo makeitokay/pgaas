@@ -5,3 +5,5 @@ riderModule.iml
 /_ReSharper.Caches/
 secrets
 charts/pg-cluster/templates/s3-secret.yaml
+charts/pg-cluster/templates/tls-secret.yaml
+charts/infrastructure/templates/tls-secret.yaml
