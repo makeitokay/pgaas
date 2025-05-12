@@ -97,7 +97,8 @@ public class SecurityGroupController : ControllerBase
 		var clusters = _clusterRepository.Items
 			.Where(c =>
 				c.WorkspaceId == workspaceId
-				&& c.SecurityGroupId == securityGroup.Id)
+				&& c.SecurityGroupId == securityGroup.Id
+				&& c.Status != ClusterStatus.Deleted)
 			.ToList();
 		
 		foreach (var cluster in clusters)
